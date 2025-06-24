@@ -1,0 +1,4 @@
+test in ./
+copy to ./code
+obfuscate to ./publish
+npm publish to ./publish
