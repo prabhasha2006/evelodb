@@ -1,12 +1,14 @@
 // This is a test file for the EveloDB module.
 
-const eveloDB = require('evelodb');
+const eveloDB = require('./evelodb.js');
+let db
 
-let db;
+// Initialize DB
 try {
     db = new eveloDB({
         directory: './evelodatabase',
         extension: 'db',
+        noRepeat: true,
         // Start unencrypted to test conversion
     });
 } catch (err) {
@@ -14,116 +16,160 @@ try {
     process.exit(1);
 }
 
-function createData(collection, data) {
-    try {
-        const res = db.create(collection, data);
-        console.log(`Create Result:`, res);
-    } catch (err) {
-        console.error('Create Error:', err.message);
-    }
-}
-
-function findData(collection, query) {
-    try {
-        const res = db.find(collection, query);
-        console.log(`Find Result:`, res);
-    } catch (err) {
-        console.error('Find Error:', err.message);
-    }
-}
-
-function searchData(collection, query) {
-    try {
-        const res = db.search(collection, query);
-        console.log(`Find Result:`, res);
-    } catch (err) {
-        console.error('Find Error:', err.message);
-    }
-}
-
-function deleteData(collection, query) {
-    try {
-        const res = db.delete(collection, query);
-        console.log(`Delete Result:`, res);
-    } catch (err) {
-        console.error('Delete Error:', err.message);
-    }
-}
-
-function convertEncryption(fromEnc, fromKey, toEnc, toKey) {
-    try {
-        const res = db.changeEncrypt({
-            from: {
-                directory: './evelodatabase',
-                extension: 'db',
-                encryption: fromEnc,
-                encryptionKey: fromKey
-            },
-            to: {
-                directory: './evelodatabase',
-                extension: 'db',
-                encryption: toEnc || null,
-                encryptionKey: toKey || null
-            },
-            collections: ['users'] // optional
-        });
-        console.log('Conversion Result:', res);
-    } catch (err) {
-        console.error('Conversion Error:', err.message);
-    }
-}
-
 // ===== TEST FLOW =====
 
 const testUser = { name: 'John Doe', age: 30 };
-const query = { name: 'John Doe' };
+const query = { age: 30 };
+const new_query = { age: 40 };
 const search_query = { name: 'Joh' };
+let createdId;
 
-console.log('\n✅ STEP 1: Create Data');
-createData('users', testUser);
+// Create Data
+console.log('\n✅ Create Data');
+try {
+    const res = db.create('users', testUser);
+    createdId = create.__id;
+    console.log(`Create Result:`, res);
+} catch (err) {
+    console.error('Create Error:', err.message);
+}
 
-console.log('\n🔍 STEP 2: Find Before Conversion');
-findData('users', query);
+// Find Data
+console.log('\n🔍 Find Before Conversion');
+try {
+    const res = db.find('users', { __id: createdId });
+    console.log(`Find Result:`, res);
+} catch (err) {
+    console.error('Find Error:', err.message);
+}
 
-console.log('\n🔍 STEP 3: Search by a piece of value');
-searchData('users', search_query);
+// Search Data
+console.log('\n🔍 Search by a piece of value');
+try {
+    const res = db.search('users', search_query);
+    console.log(`Find Result:`, res);
+} catch (err) {
+    console.error('Find Error:', err.message);
+}
 
-console.log('\n🔐 STEP 4: Convert to Encrypted Format');
-convertEncryption(
-    '', '', // from: unencrypted
-    'aes-256-cbc',
-    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-);
+// Convert to encrypted format
+console.log('\n🔐 Convert to Encrypted Format');
+try {
+    const res = db.changeConfig({
+        from: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true
+        },
+        to: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true,
+            encryption: 'aes-256-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+        }
+    });
+    console.log('Conversion Result:', res);
+} catch (err) {
+    console.error('Conversion Error:', err.message);
+}
 
-console.log('\n🔍 STEP 5: Try Reading Encrypted With New DB Config');
+// Initialize with new config
 try {
     db = new eveloDB({
         directory: './evelodatabase',
         extension: 'db',
+        noRepeat: true,
         encryption: 'aes-256-cbc',
         encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
     });
 } catch (err) {
     console.error('Re-init Error:', err.message);
 }
-findData('users', query);
 
-console.log('\n🔓 STEP 6: Convert Back to Plain JSON');
-convertEncryption(
-    'aes-256-cbc',
-    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    '', ''
-);
+// Find Data Again
+console.log('\n🔍 Try Reading Encrypted With New DB Config');
+try {
+    const res = db.find('users', query);
+    console.log(`Find Result:`, res);
+} catch (err) {
+    console.error('Find Error:', err.message);
+}
 
-console.log('\n🔍 STEP 7: Try Reading Encrypted With New DB Config');
+// Edit Data
+console.log('\n🔍 Editing data');
+try {
+    const res = db.edit('users', query, new_query);
+    console.log(`Editing Result:`, res);
+} catch (err) {
+    console.error('Edit Error:', err.message);
+}
+
+// Find Data Again
+console.log('\n🔍 Find old object again after edit');
+try {
+    const res = db.find('users', query);
+    console.log(`Find Result:`, res);
+} catch (err) {
+    console.error('Find Error:', err.message);
+}
+
+// Find Data Again
+console.log('\n🔍 Find new object again after edit');
+try {
+    const res = db.find('users', new_query);
+    console.log(`Find Result:`, res);
+} catch (err) {
+    console.error('Find Error:', err.message);
+}
+
+// Convert config back to plain JSON
+console.log('\n🔓 Convert Back to Plain JSON');
+try {
+    const res = db.changeConfig({
+        from: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true,
+            encryption: 'aes-256-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+        },
+        to: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true
+        }
+    });
+    console.log('Conversion Result:', res);
+} catch (err) {
+    console.error('Conversion Error:', err.message);
+}
+
+// Initialize with new config
 try {
     db = new eveloDB({
         directory: './evelodatabase',
-        extension: 'db'
+        extension: 'db',
+        noRepeat: true
     });
 } catch (err) {
     console.error('Re-init Error:', err.message);
 }
 
-console.log('\n🧹 STEP 8: Clean Up');
-deleteData('users', query);
+// Delete Data
+console.log('\n🧹 Clean Up');
+try {
+    const res = db.delete('users', new_query);
+    console.log(`Delete Result:`, res);
+} catch (err) {
+    console.error('Delete Error:', err.message);
+}
+
+// Reset collection
+console.log('\n🧹 Reset Collection')
+try {
+    const res = db.reset('users');
+    console.log(`Reset Result:`, res);
+} catch (err) {
+    console.error('Reset Error:', err.message);
+}

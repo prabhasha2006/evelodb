@@ -1,7 +1,7 @@
 {
   "name": "evelodb",
   "description": "An awesome local database management system with nodejs. Made by Evelocore. With B-tree Operations & AES Encryption.",
-  "version": "1.1.8",
+  "version": "1.1.7",
   "main": "evelodb.js",
   "scripts": {
     "test": "node test.js"

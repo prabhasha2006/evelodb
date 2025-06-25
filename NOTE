@@ -2,3 +2,12 @@ test in ./
 copy to ./code
 obfuscate to ./publish
 npm publish to ./publish
+
+
+npm login
+npm publish
+
+npm unpublish evelodb@1.0.2
+npm dist-tag add evelodb@1.1.6 latest
+npm version patch --no-git-tag-version
+npm publish --force

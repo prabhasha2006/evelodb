@@ -1,3 +1,5 @@
+// 1.1.7
+
 const fs = require('fs');
 const { encrypt, decrypt } = require('./encryption');
 
@@ -7,8 +9,10 @@ const defaultConfig = {
     extension: 'json',
     tabspace: 3,
     encryption: null,
-    encryptionKey: null
-};
+    encryptionKey: null,
+    noRepeat: false,
+    autoPrimaryKey: true
+}
 
 // Deep comparison function
 function deepCompare(obj1, obj2) {
@@ -175,19 +179,52 @@ class eveloDB {
 
     // Database operations
     create(collection, data) {
-        if (!collection) return { err: 'collection required!' };
-        if (!data) return { err: 'data required!' };
-
-        let object = { ...data };
-        let db = [];
+        // Validate required parameters
+        if (!collection) return { err: 'Collection name required' };
+        if (!data || typeof data !== 'object') return { err: 'Valid data object required' };
 
         const fullPath = this.getFilePath(collection);
+        let db = [];
+
+        // Load existing data if file exists
         if (fs.existsSync(fullPath)) {
             const fileData = fs.readFileSync(fullPath, 'utf8');
             db = this.config.encryption ? this.decrypt(fileData) : JSON.parse(fileData);
+
+            // Early noRepeat check before modifying data
+            if (this.config.noRepeat) {
+                const isDuplicate = db.some(existingItem => {
+                    // Compare only user-provided fields
+                    return Object.keys(data).every(key => {
+                        // Skip comparison if this is an auto-generated field
+                        if (key === '__id') return true;
+                        return deepCompare(existingItem[key], data[key]);
+                    }) &&
+                        // Also ensure we're not matching against records missing compared fields
+                        Object.keys(data).every(key => key in existingItem);
+                });
+
+                if (isDuplicate) {
+                    return {
+                        err: 'Duplicate data - record already exists (noRepeat enabled)',
+                        code: 'DUPLICATE_DATA'
+                    };
+                }
+            }
         }
 
+        // Prepare the new object (after passing noRepeat check)
+        const object = { ...data };
+
+        // Add autoPrimaryKey if enabled
+        if (this.config.autoPrimaryKey) {
+            object.__id = this.generateUniqueId();
+        }
+
+        // Add to database
         db.push(object);
+
+        // Write to file
         fs.writeFileSync(
             fullPath,
             this.config.encryption
@@ -195,10 +232,15 @@ class eveloDB {
                 : JSON.stringify(db, null, this.config.tabspace)
         );
 
+        // Index in B-Tree if token exists
         if (object.token) {
             this.btree.insert(object.token, object);
         }
-        return { success: true };
+
+        return {
+            success: true,
+            ...(this.config.autoPrimaryKey && { __id: object.__id })
+        };
     }
 
     delete(collection, conditions) {
@@ -317,32 +359,80 @@ class eveloDB {
     }
 
     edit(collection, conditions, newData) {
-        if (!collection) return { err: 'collection required!' };
-        if (!conditions) return { err: 'conditions required!' };
-        if (!newData) return { err: 'new data required!' };
+        // Validate required parameters
+        if (!collection) return { err: 'Collection name required' };
+        if (!conditions) return { err: 'Conditions required' };
+        if (!newData) return { err: 'New data required' };
 
         const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return { err: 404 };
+        if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
 
+        // Load and decrypt data if encrypted
         let db = this.config.encryption
             ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
             : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
-        db.forEach(item => {
-            if (Object.entries(conditions).every(([key, value]) => item[key] === value)) {
-                Object.entries(newData).forEach(([key, value]) => {
-                    item[key] = value;
-                });
+        let editedCount = 0;
+        let duplicateFound = false;
+
+        // Find and update matching items
+        const updatedDb = db.map(item => {
+            // Check if item matches conditions
+            if (Object.entries(conditions).every(([key, value]) => {
+                return item[key] === value || deepCompare(item[key], value);
+            })) {
+                // Create the would-be updated object
+                const updatedItem = { ...item, ...newData };
+
+                // Check for duplicates if noRepeat is enabled
+                if (this.config.noRepeat) {
+                    const isDuplicate = db.some(existingItem => {
+                        // Skip comparing with itself
+                        if (existingItem.__id && item.__id && existingItem.__id === item.__id) {
+                            return false;
+                        }
+                        // Compare all fields except auto-generated ones
+                        return Object.keys(newData).every(key => {
+                            if (key === '__id') return false;
+                            return deepCompare(existingItem[key], updatedItem[key]);
+                        });
+                    });
+
+                    if (isDuplicate) {
+                        duplicateFound = true;
+                        return item; // Return original item without changes
+                    }
+                }
+
+                editedCount++;
+                return updatedItem;
             }
+            return item;
         });
 
+        if (duplicateFound) {
+            return {
+                err: 'Edit would create duplicate data (noRepeat enabled)',
+                code: 'DUPLICATE_DATA'
+            };
+        }
+
+        if (editedCount === 0) {
+            return { err: 'No matching records found', code: 'NO_MATCH' };
+        }
+
+        // Save updated data
         fs.writeFileSync(
             fullPath,
             this.config.encryption
-                ? this.encrypt(db)
-                : JSON.stringify(db, null, this.config.tabspace)
+                ? this.encrypt(updatedDb)
+                : JSON.stringify(updatedDb, null, this.config.tabspace)
         );
-        return { success: true };
+
+        return {
+            success: true,
+            modifiedCount: editedCount
+        };
     }
 
     reset(collection) {
@@ -357,7 +447,7 @@ class eveloDB {
         }
     }
 
-    changeEncrypt({ from, to, collections }) {
+    changeConfig({ from, to, collections }) {
         const path = require('path');
         const files = fs.readdirSync(from.directory);
         const { encrypt: doEncrypt, decrypt: doDecrypt } = require('./encryption');
@@ -441,6 +531,12 @@ class eveloDB {
 
     getAllFromBTree() {
         return this.btree.traverse(this.btree.root);
+    }
+
+    generateUniqueId() {
+        const timestamp = Date.now().toString(36);
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        return `${timestamp}-${randomStr}`;
     }
 }
 
