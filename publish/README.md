@@ -344,6 +344,21 @@ try {
 }
 ```
 
+### Generate Hex Key
+
+Using EveloDB inbuild method
+```js
+const length = 32 // 32, 48, 64
+const key = db.generateKey(length)
+console.log(key)
+```
+Using Crypto JS
+```js
+const crypto = require('crypto');
+const key = crypto.randomBytes(16).toString('hex'); // 32 hex chars
+console.log(key);
+```
+
 <br><br>
 <a id="changeconfig"></a>
 # 🔄 Change Configuration
@@ -352,15 +367,19 @@ try {
 - If you change the encryption / encryptionKey / extension  or directory, your current db files and data was initialized with the old config will be corrupted and cannot be read.
 - Solution for change configuration, use `changeConfig()` method. It can change your current db config to new config and continue normally after initialize again with new config .
 -
-- Eg: Converting my current `aes-256-cbc` encrypted database to `aes-128-cbc` with new key.
+- Eg: Converting my current
+ `aes-256-cbc` encrypted .json database from './evelodatabase' to `aes-128-cbc` and .db with new key and './database' directory.
+
 ```js
 const res = db.changeConfig({
     from: {
-        extension: 'db',
+        directory: './evelodatabase',
+        extension: 'json',
         encryption: 'aes-256-cbc',
         encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
     },
     to: {
+        directory: './database',
         extension: 'db',
         encryption: 'aes-128-cbc',
         encryptionKey: '0123456789abcdef0123456789abcdef' // 32 hex characters
@@ -368,11 +387,12 @@ const res = db.changeConfig({
     collections: ['users', 'accounts'] // if not set collections, convert all collections
 })
 console.log(res)
-// { success: true, converted: 1, failed: 0 }
+// { success: true, converted: 3, failed: 0 }
 
 // Initialize again
 try {
     db = new eveloDB({
+        directory: './database',
         extension: 'db',
         encryption: 'aes-128-cbc',
         encryptionKey: '0123456789abcdef0123456789abcdef'
@@ -385,15 +405,10 @@ If you remove `encryption` and `encryptionKey` parameters in `to` object, it wil
 ```js
 const res = db.changeConfig({
     from: {
-        directory: './evelodatabase',
-        extension: 'db',
         encryption: 'aes-256-cbc',
         encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
     },
-    to: {
-        directory: './evelodatabase',
-        extension: 'db'
-    }
+    to: {}
 })
 ```
 

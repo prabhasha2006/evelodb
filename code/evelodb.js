@@ -1,7 +1,7 @@
 // 1.1.7
 
 const fs = require('fs');
-const { encrypt, decrypt } = require('./encryption');
+const { encrypt, decrypt, generateKey } = require('./encryption');
 
 // Default configuration
 const defaultConfig = {
@@ -170,6 +170,10 @@ class eveloDB {
             this.config.encryption,
             this.config.encryptionKey
         );
+    }
+
+    generateKey(length) {
+        return generateKey(length);
     }
 
     // Helper method to get file path
@@ -449,7 +453,7 @@ class eveloDB {
 
     changeConfig({ from, to, collections }) {
         const path = require('path');
-        const files = fs.readdirSync(from.directory);
+        const files = fs.readdirSync(from.directory || this.config.directory);
         const { encrypt: doEncrypt, decrypt: doDecrypt } = require('./encryption');
 
         const keyLengths = {
@@ -471,8 +475,15 @@ class eveloDB {
         validate(to.encryptionKey, to.encryption);
 
         let successCount = 0, errorCount = 0;
-        const fromExt = from.extension || 'json';
-        const toExt = to.extension || 'json';
+        const fromExt = from.extension || this.config.extension;
+        const toExt = to.extension || this.config.extension;
+        const fromDir = from.directory || this.config.directory;
+        const toDir = to.directory || this.config.directory;
+
+        // ✅ Create destination directory if it doesn't exist
+        if (!fs.existsSync(toDir)) {
+            fs.mkdirSync(toDir, { recursive: true });
+        }
 
         files.forEach(file => {
             const ext = path.extname(file).slice(1);
@@ -480,8 +491,8 @@ class eveloDB {
             if (ext !== fromExt) return;
             if (collections && !collections.includes(name)) return;
 
-            const fromPath = path.join(from.directory, file);
-            const toPath = path.join(to.directory, `${name}.${toExt}`);
+            const fromPath = path.join(fromDir, file);
+            const toPath = path.join(toDir, `${name}.${toExt}`);
 
             try {
                 const raw = fs.readFileSync(fromPath, 'utf8');
@@ -495,11 +506,24 @@ class eveloDB {
 
                 fs.writeFileSync(toPath, newContent);
                 successCount++;
+
+                // Delete old file if directory or extension changed
+                if (fromPath !== toPath && fs.existsSync(fromPath)) {
+                    fs.unlinkSync(fromPath);
+                }
             } catch (err) {
                 console.error(`Failed to convert ${file}: ${err.message}`);
                 errorCount++;
             }
         });
+
+        // ✅ Delete fromDir if it's now empty and not same as toDir
+        if (fromDir !== toDir && fs.existsSync(fromDir)) {
+            const remaining = fs.readdirSync(fromDir);
+            if (remaining.length === 0) {
+                fs.rmdirSync(fromDir, { recursive: true });
+            }
+        }
 
         return {
             success: true,
@@ -507,6 +531,7 @@ class eveloDB {
             failed: errorCount
         };
     }
+
 
 
     rebuildBTree(collection) {

@@ -29,4 +29,8 @@ function decrypt(data, algorithm = 'aes-256-cbc', key) {
     return JSON.parse(decrypted.toString());
 }
 
-module.exports = { encrypt, decrypt };
+function generateKey(length = 32) {
+    return crypto.randomBytes(length).toString('hex'); // Generates a key in hex format
+}
+
+module.exports = { encrypt, decrypt, generateKey };
