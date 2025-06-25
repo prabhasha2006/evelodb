@@ -363,7 +363,7 @@ const res = db.changeConfig({
     to: {
         extension: 'db',
         encryption: 'aes-128-cbc',
-        encryptionKey: '0123456789abcdef0123456789abcdef' // 64 hex characters
+        encryptionKey: '0123456789abcdef0123456789abcdef' // 32 hex characters
     },
     collections: ['users', 'accounts'] // if not set collections, convert all collections
 })
