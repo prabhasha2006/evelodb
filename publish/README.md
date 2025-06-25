@@ -387,7 +387,7 @@ const res = db.changeConfig({
     collections: ['users', 'accounts'] // if not set collections, convert all collections
 })
 console.log(res)
-// { success: true, converted: 3, failed: 0 }
+// { success: true, converted: 2, failed: 0 }
 
 // Initialize again
 try {

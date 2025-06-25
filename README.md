@@ -344,6 +344,21 @@ try {
 }
 ```
 
+### Generate Hex Key
+
+Using EveloDB inbuild method
+```js
+const length = 32 // 32, 48, 64
+const key = db.generateKey(length)
+console.log(key)
+```
+Using Crypto JS
+```js
+const crypto = require('crypto');
+const key = crypto.randomBytes(16).toString('hex'); // 32 hex chars
+console.log(key);
+```
+
 <br><br>
 <a id="changeconfig"></a>
 # 🔄 Change Configuration
@@ -372,7 +387,7 @@ const res = db.changeConfig({
     collections: ['users', 'accounts'] // if not set collections, convert all collections
 })
 console.log(res)
-// { success: true, converted: 1, failed: 0 }
+// { success: true, converted: 2, failed: 0 }
 
 // Initialize again
 try {
