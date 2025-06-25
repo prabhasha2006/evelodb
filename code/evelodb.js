@@ -2,12 +2,14 @@
 
 const fs = require('fs');
 const { encrypt, decrypt, generateKey } = require('./encryption');
+const { BSON, ObjectId } = require('bson');
 
 // Default configuration
 const defaultConfig = {
     directory: './evelodatabase',
     extension: 'json',
     tabspace: 3,
+    encode: 'json', // json, bson
     encryption: null,
     encryptionKey: null,
     noRepeat: false,
@@ -121,6 +123,16 @@ class eveloDB {
     constructor(config = {}) {
         this.config = { ...defaultConfig, ...config };
 
+        if (this.config.encode === 'bson' && this.config.encryption && this.config.encryptionKey) {
+            throw new Error('BSON encoding does not support encryption. Please set "encryption" and "encryptionKey" to null or use "json" encoding.');
+        }
+
+        if (this.config.encode === 'bson') {
+            this.config.tabspace = 0; // BSON does not use tabspace
+            this.config.encryption = null; // BSON does not support encryption
+            this.config.encryptionKey = null; // BSON does not support encryption
+        }
+
         // Validate encryption config
         if (this.config.encryption) {
             const key = this.config.encryptionKey;
@@ -157,6 +169,9 @@ class eveloDB {
 
     // Encryption/decryption methods
     encrypt(data) {
+        if (this.config.encode === 'bson') {
+            return data
+        }
         return encrypt(
             data,
             this.config.encryption,
@@ -165,11 +180,50 @@ class eveloDB {
     }
 
     decrypt(data) {
+        if (this.config.encode === 'bson') {
+            return data
+        }
         return decrypt(
             data,
             this.config.encryption,
             this.config.encryptionKey
         );
+    }
+
+    encodeData(data) {
+        if (this.config.encode === 'bson') {
+            const obj = { db: data };
+            return BSON.serialize(obj);
+        }
+        if (this.config.encode === 'json') {
+            return JSON.stringify(data, null, this.config.tabspace);
+        }
+        return JSON.stringify(data, null, this.config.tabspace);
+    }
+
+    decodeData(data) {
+        if (this.config.encode === 'bson') {
+            const { db } = BSON.deserialize(data);
+            return db;
+        }
+        if (this.config.encode === 'json') {
+            return JSON.parse(data);
+        }
+        return JSON.parse(data);
+    }
+
+    readFileData(filePath) {
+        /* if (!fs.existsSync(filePath)) {
+            return null;
+        } */
+        const data = this.config.encode === 'bson' ? fs.readFileSync(filePath) : fs.readFileSync(filePath, 'utf8');
+        return this.config.encryption ? this.decrypt(data) : this.decodeData(data);
+    }
+
+    writeFileData(filePath, data) {
+        const encodedData = this.config.encryption ? this.encrypt(this.encodeData(data)) : this.encodeData(data);
+        fs.writeFileSync(filePath, encodedData);
+        return true;
     }
 
     generateKey(length) {
@@ -192,8 +246,7 @@ class eveloDB {
 
         // Load existing data if file exists
         if (fs.existsSync(fullPath)) {
-            const fileData = fs.readFileSync(fullPath, 'utf8');
-            db = this.config.encryption ? this.decrypt(fileData) : JSON.parse(fileData);
+            db = this.readFileData(fullPath)
 
             // Early noRepeat check before modifying data
             if (this.config.noRepeat) {
@@ -229,12 +282,7 @@ class eveloDB {
         db.push(object);
 
         // Write to file
-        fs.writeFileSync(
-            fullPath,
-            this.config.encryption
-                ? this.encrypt(db)
-                : JSON.stringify(db, null, this.config.tabspace)
-        );
+        this.writeFileData(fullPath, db)
 
         // Index in B-Tree if token exists
         if (object.token) {
@@ -254,9 +302,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         const filteredData = db.filter(item => {
             return !Object.entries(conditions).every(([key, value]) => {
@@ -268,12 +314,7 @@ class eveloDB {
             });
         });
 
-        fs.writeFileSync(
-            fullPath,
-            this.config.encryption
-                ? this.encrypt(filteredData)
-                : JSON.stringify(filteredData, null, this.config.tabspace)
-        );
+        this.writeFileData(fullPath, filteredData)
         return { success: true };
     }
 
@@ -282,12 +323,7 @@ class eveloDB {
         if (!data) return { err: 'data required!' };
 
         const fullPath = this.getFilePath(collection);
-        fs.writeFileSync(
-            fullPath,
-            this.config.encryption
-                ? this.encrypt(data)
-                : JSON.stringify(data, null, this.config.tabspace)
-        );
+        this.writeFileData(fullPath, data)
         return { success: true };
     }
 
@@ -298,9 +334,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         return db.filter(item => {
             return Object.entries(conditions).every(([key, value]) => item[key] === value);
@@ -314,9 +348,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         return db.find(item => {
             return Object.entries(conditions).every(([key, value]) => item[key] === value);
@@ -330,9 +362,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         return db.filter(item => {
             return Object.entries(conditions).every(([key, value]) => {
@@ -350,9 +380,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        return this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        return this.readFileData(fullPath)
     }
 
     check(collection, data) {
@@ -372,9 +400,7 @@ class eveloDB {
         if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
 
         // Load and decrypt data if encrypted
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         let editedCount = 0;
         let duplicateFound = false;
@@ -426,12 +452,7 @@ class eveloDB {
         }
 
         // Save updated data
-        fs.writeFileSync(
-            fullPath,
-            this.config.encryption
-                ? this.encrypt(updatedDb)
-                : JSON.stringify(updatedDb, null, this.config.tabspace)
-        );
+        this.writeFileData(fullPath, updatedDb)
 
         return {
             success: true,
@@ -452,6 +473,11 @@ class eveloDB {
     }
 
     changeConfig({ from, to, collections }) {
+        
+        if (this.config.encode !== 'json' && (from.encryption || from.encryptionKey || to.encryption || to.encryptionKey)) {
+            throw new Error('Cannot change encryption settings while encoding is not JSON');
+        }
+
         const path = require('path');
         const files = fs.readdirSync(from.directory || this.config.directory);
         const { encrypt: doEncrypt, decrypt: doDecrypt } = require('./encryption');
@@ -498,11 +524,11 @@ class eveloDB {
                 const raw = fs.readFileSync(fromPath, 'utf8');
                 const json = from.encryption
                     ? doDecrypt(raw, from.encryption, from.encryptionKey)
-                    : JSON.parse(raw);
+                    : this.decodeData(raw);
 
                 const newContent = to.encryption
                     ? doEncrypt(json, to.encryption, to.encryptionKey)
-                    : JSON.stringify(json, null, 3);
+                    : this.encodeData(json, null, 3);
 
                 fs.writeFileSync(toPath, newContent);
                 successCount++;
@@ -540,9 +566,7 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.config.encryption
-            ? this.decrypt(fs.readFileSync(fullPath, 'utf8'))
-            : JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        let db = this.readFileData(fullPath)
 
         this.btree = new BTree(3);
         db.forEach(item => {
@@ -559,6 +583,9 @@ class eveloDB {
     }
 
     generateUniqueId() {
+        if (this.config.encode === 'bson') {
+            return new ObjectId()//.toString();
+        }
         const timestamp = Date.now().toString(36);
         const randomStr = Math.random().toString(36).substring(2, 8);
         return `${timestamp}-${randomStr}`;

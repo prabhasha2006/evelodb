@@ -28,7 +28,7 @@ let createdId;
 console.log('\n✅ Create Data');
 try {
     const res = db.create('users', testUser);
-    createdId = create.__id;
+    createdId = res.__id;
     console.log(`Create Result:`, res);
 } catch (err) {
     console.error('Create Error:', err.message);
@@ -166,10 +166,10 @@ try {
 }
 
 // Reset collection
-console.log('\n🧹 Reset Collection')
+console.log('\n🧹 Drop Collection')
 try {
     const res = db.reset('users');
-    console.log(`Reset Result:`, res);
+    console.log(`Drop Result:`, res);
 } catch (err) {
-    console.error('Reset Error:', err.message);
+    console.error('Drop Error:', err.message);
 }

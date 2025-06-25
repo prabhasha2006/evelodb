@@ -5,19 +5,23 @@ try {
     db = new eveloDB({
         noRepeat: true,
         auroPrimaryKey: true,
-        extension: 'json',
+        extension: 'db',
+            encryption: 'aes-128-cbc',
+            encryptionKey: '4c51172e64a2ee9bbbad4975d47566fe'
     })
 } catch (error) {
     console.error('Failed to initialize database:', error);
     process.exit(1);
 }
 
-console.log(db.generateKey(32));
+//console.log(db.create('users', { name:'Kumuthu', age: 30}))
+//console.log(db.edit('users', { age: 30}, { age: 40}))
+console.log(db.find('users', { age: 40}))
 
-try {
+/* try {
     const res = db.changeConfig({
         from: {
-            extension: 'json',
+            extension: 'db',
         },
         to: {
             extension: 'db',
@@ -29,7 +33,7 @@ try {
 } catch (error) {
     console.error('Failed to change database configuration:', error);
     process.exit(1);
-}
+} */
 
 
 /* try {

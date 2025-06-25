@@ -292,13 +292,13 @@ const users = db.inject('appdata', {
 
 <hr>
 
-### Drop Collection
+### Reset Collection
 ```js
 // Structure
-db.drop('collection');
+db.reset('collection');
 
 // Example
-db.drop('accounts');
+db.reset('accounts');
 ```
 
 <br><br>
@@ -432,9 +432,9 @@ let db
 // Initialize DB
 try {
     db = new eveloDB({
+        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
-        encode: 'json',
         // Start unencrypted to test conversion
     });
 } catch (err) {
@@ -454,7 +454,7 @@ let createdId;
 console.log('\n✅ Create Data');
 try {
     const res = db.create('users', testUser);
-    createdId = res.__id;
+    createdId = create.__id;
     console.log(`Create Result:`, res);
 } catch (err) {
     console.error('Create Error:', err.message);
@@ -463,7 +463,7 @@ try {
 // Find Data
 console.log('\n🔍 Find Before Conversion');
 try {
-    const res = db.find('users', query);
+    const res = db.find('users', { __id: createdId });
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -482,10 +482,17 @@ try {
 console.log('\n🔐 Convert to Encrypted Format');
 try {
     const res = db.changeConfig({
-        from: {},
+        from: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true
+        },
         to: {
-            encryption: 'aes-128-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef'
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true,
+            encryption: 'aes-256-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
         }
     });
     console.log('Conversion Result:', res);
@@ -499,8 +506,8 @@ try {
         directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
-        encryption: 'aes-128-cbc',
-        encryptionKey: '0123456789abcdef0123456789abcdef'
+        encryption: 'aes-256-cbc',
+        encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
     });
 } catch (err) {
     console.error('Re-init Error:', err.message);
@@ -547,10 +554,17 @@ console.log('\n🔓 Convert Back to Plain JSON');
 try {
     const res = db.changeConfig({
         from: {
-            encryption: 'aes-128-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef'
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true,
+            encryption: 'aes-256-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
         },
-        to: {}
+        to: {
+            directory: './evelodatabase',
+            extension: 'db',
+            noRepeat: true
+        }
     });
     console.log('Conversion Result:', res);
 } catch (err) {
@@ -560,6 +574,7 @@ try {
 // Initialize with new config
 try {
     db = new eveloDB({
+        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true
     });
@@ -579,7 +594,7 @@ try {
 // Reset collection
 console.log('\n🧹 Drop Collection')
 try {
-    const res = db.drop('users');
+    const res = db.reset('users');
     console.log(`Drop Result:`, res);
 } catch (err) {
     console.error('Drop Error:', err.message);
@@ -713,9 +728,6 @@ BSON -> Create Error: The value of "offset" is out of range. It must be >= 0 && 
 - ✓ Fast retrieval
 - ✓ No Repeat option
 - ✓ Auto Primary Key option
-
-<hr>
-<br>
 
 <p align="center">
 Copyright 2024 © <a href="https://evelocore.com">Evelocore</a> - All rights reserved

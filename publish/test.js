@@ -166,10 +166,10 @@ try {
 }
 
 // Reset collection
-console.log('\n🧹 Reset Collection')
+console.log('\n🧹 Drop Collection')
 try {
     const res = db.reset('users');
-    console.log(`Reset Result:`, res);
+    console.log(`Drop Result:`, res);
 } catch (err) {
-    console.error('Reset Error:', err.message);
+    console.error('Drop Error:', err.message);
 }

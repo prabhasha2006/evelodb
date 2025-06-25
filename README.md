@@ -18,6 +18,7 @@
 - [Encryptions](#encryptions)
 - [Change Config](#changeconfig)
 - [Testing Script](#testing)
+- [Use BSON binary encoded](#usebson)
 - [Features](#features)
 
 <br>
@@ -291,13 +292,13 @@ const users = db.inject('appdata', {
 
 <hr>
 
-### Reset Collection
+### Drop Collection
 ```js
 // Structure
-db.reset('collection');
+db.drop('collection');
 
 // Example
-db.reset('accounts');
+db.drop('accounts');
 ```
 
 <br><br>
@@ -431,9 +432,9 @@ let db
 // Initialize DB
 try {
     db = new eveloDB({
-        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
+        encode: 'json',
         // Start unencrypted to test conversion
     });
 } catch (err) {
@@ -453,7 +454,7 @@ let createdId;
 console.log('\n✅ Create Data');
 try {
     const res = db.create('users', testUser);
-    createdId = create.__id;
+    createdId = res.__id;
     console.log(`Create Result:`, res);
 } catch (err) {
     console.error('Create Error:', err.message);
@@ -462,7 +463,7 @@ try {
 // Find Data
 console.log('\n🔍 Find Before Conversion');
 try {
-    const res = db.find('users', { __id: createdId });
+    const res = db.find('users', query);
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -481,17 +482,10 @@ try {
 console.log('\n🔐 Convert to Encrypted Format');
 try {
     const res = db.changeConfig({
-        from: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true
-        },
+        from: {},
         to: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true,
-            encryption: 'aes-256-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            encryption: 'aes-128-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef'
         }
     });
     console.log('Conversion Result:', res);
@@ -505,8 +499,8 @@ try {
         directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
-        encryption: 'aes-256-cbc',
-        encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+        encryption: 'aes-128-cbc',
+        encryptionKey: '0123456789abcdef0123456789abcdef'
     });
 } catch (err) {
     console.error('Re-init Error:', err.message);
@@ -553,17 +547,10 @@ console.log('\n🔓 Convert Back to Plain JSON');
 try {
     const res = db.changeConfig({
         from: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true,
-            encryption: 'aes-256-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            encryption: 'aes-128-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef'
         },
-        to: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true
-        }
+        to: {}
     });
     console.log('Conversion Result:', res);
 } catch (err) {
@@ -573,7 +560,6 @@ try {
 // Initialize with new config
 try {
     db = new eveloDB({
-        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true
     });
@@ -591,14 +577,128 @@ try {
 }
 
 // Reset collection
-console.log('\n🧹 Reset Collection')
+console.log('\n🧹 Drop Collection')
 try {
-    const res = db.reset('users');
-    console.log(`Reset Result:`, res);
+    const res = db.drop('users');
+    console.log(`Drop Result:`, res);
 } catch (err) {
-    console.error('Reset Error:', err.message);
+    console.error('Drop Error:', err.message);
 }
 ```
+</details>
+<br><br>
+
+<a id="usebson"></a>
+# 📝 Use BSON encoded
+
+> ###  Binary Serialized Object Notation with EveloDB
+
+- EveloDB can handle both JSON and BSON encoded data. Here's how to use BSON encoded data with eveloDB: 
+- JSON use string for keys, while BSON use ObjectId for keys.
+- ⚠️ Note: BSON encoding doesn't support encryption. It allways unreadable.
+
+### Configuration with BSON encoding
+```js
+const eveloDB = require('evelodb')
+let db
+try {
+    db = new eveloDB({
+        directory: './evelodatabase',
+        extension: 'db', // default 'bson'
+        encode: 'bson',
+    })
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
+```
+- `encode: 'bson'` for BSON encoding
+- `encode: 'json'` for JSON encoding (default)
+
+## Benchmark test JSON vs BSON
+
+<details>
+<summary><code>Show Result</code></summary>
+Source code:
+
+```js
+const eveloDB = require('evelodb');
+let db
+
+const test = 'json' // 'json' or 'bson'
+
+try {
+    db = new eveloDB({
+        extension: test,
+        encode: test
+    });
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
+
+const testUser = {
+    name: 'John Doe',
+    age: 40,
+    photo: '[ 96MB base64 image string and test ]',
+}
+
+// Create Data
+function createData() {
+    console.log('\n✅ Create Data');
+    try {
+        db.create('users', testUser);
+    } catch (err) {
+        console.error('Create Error:', err.message);
+    }
+}
+
+// Find Data
+function findData() {
+    let startTime = Date.now();
+    try {
+        const res = db.find('users', { name: 'John Doe' });
+        if (res.length > 0) {
+            const t = Date.now() - startTime;
+            console.log(`Find Result Time taken: ${t}ms - ${test.toLocaleUpperCase()}`);
+        }
+    } catch (err) {
+        console.error('Find Error:', err.message);
+    }
+}
+
+
+for (let i = 0; i < 180; i++) {
+    createData()
+}
+
+findData()
+```
+
+Result:
+```bash
+680KB -> Find Result Time taken: 1ms - JSON 
+680KB -> Find Result Time taken: 4ms - BSON
+
+19157KB -> Find Result Time taken: 40ms - JSON
+17331KB -> Find Result Time taken: 50ms - BSON
+```
+
+After trying to create 210+ data - result:
+```js
+for (let i = 0; i < 210; i++) {
+    createData()
+}
+```
+```bash
+20115KB -> Find Result Time taken: 41ms - JSON
+BSON -> Create Error: The value of "offset" is out of range. It must be >= 0 && <= 17825792. Received 17825794
+```
+
+## Why JSON is faster than BSON?
+- BSON requires binary decode `BSON.deserialize` before JS can use it.
+- JSON uses `JSON.parse`, which is highly optimized in V8 (Node.js engine).
+- BSON spec has a hard cap: 16,777,216 bytes (~16MB) per document.
 </details>
 
 <br><br>
@@ -606,6 +706,7 @@ try {
 <a id="features"></a>
 # 💡 Features
 - ✓ JSON-based storage
+- ✓ BSON-based storage
 - ✓ AES Encryption
 - ✓ Custom path and extension
 - ✓ B-Tree indexing
