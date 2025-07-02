@@ -4,10 +4,7 @@ let db
 try {
     db = new eveloDB({
         noRepeat: true,
-        auroPrimaryKey: true,
-        extension: 'db',
-            encryption: 'aes-128-cbc',
-            encryptionKey: '4c51172e64a2ee9bbbad4975d47566fe'
+        autoPrimaryKey: 'key'
     })
 } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -16,7 +13,7 @@ try {
 
 //console.log(db.create('users', { name:'Kumuthu', age: 30}))
 //console.log(db.edit('users', { age: 30}, { age: 40}))
-console.log(db.find('users', { age: 40}))
+console.log(db.create('users', { age: 40}))
 
 /* try {
     const res = db.changeConfig({

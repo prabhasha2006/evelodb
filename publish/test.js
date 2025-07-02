@@ -6,9 +6,10 @@ let db
 // Initialize DB
 try {
     db = new eveloDB({
-        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
+        encode: 'json',
+        autoPrimaryKey: 'key' // auto incrementing key
         // Start unencrypted to test conversion
     });
 } catch (err) {
@@ -28,7 +29,7 @@ let createdId;
 console.log('\n✅ Create Data');
 try {
     const res = db.create('users', testUser);
-    createdId = create.__id;
+    createdId = res.__id;
     console.log(`Create Result:`, res);
 } catch (err) {
     console.error('Create Error:', err.message);
@@ -37,7 +38,7 @@ try {
 // Find Data
 console.log('\n🔍 Find Before Conversion');
 try {
-    const res = db.find('users', { __id: createdId });
+    const res = db.find('users', query);
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -56,17 +57,10 @@ try {
 console.log('\n🔐 Convert to Encrypted Format');
 try {
     const res = db.changeConfig({
-        from: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true
-        },
+        from: {},
         to: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true,
-            encryption: 'aes-256-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            encryption: 'aes-128-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef'
         }
     });
     console.log('Conversion Result:', res);
@@ -80,8 +74,8 @@ try {
         directory: './evelodatabase',
         extension: 'db',
         noRepeat: true,
-        encryption: 'aes-256-cbc',
-        encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+        encryption: 'aes-128-cbc',
+        encryptionKey: '0123456789abcdef0123456789abcdef'
     });
 } catch (err) {
     console.error('Re-init Error:', err.message);
@@ -128,17 +122,10 @@ console.log('\n🔓 Convert Back to Plain JSON');
 try {
     const res = db.changeConfig({
         from: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true,
-            encryption: 'aes-256-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            encryption: 'aes-128-cbc',
+            encryptionKey: '0123456789abcdef0123456789abcdef'
         },
-        to: {
-            directory: './evelodatabase',
-            extension: 'db',
-            noRepeat: true
-        }
+        to: {}
     });
     console.log('Conversion Result:', res);
 } catch (err) {
@@ -148,7 +135,6 @@ try {
 // Initialize with new config
 try {
     db = new eveloDB({
-        directory: './evelodatabase',
         extension: 'db',
         noRepeat: true
     });
@@ -168,7 +154,7 @@ try {
 // Reset collection
 console.log('\n🧹 Drop Collection')
 try {
-    const res = db.reset('users');
+    const res = db.drop('users');
     console.log(`Drop Result:`, res);
 } catch (err) {
     console.error('Drop Error:', err.message);

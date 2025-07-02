@@ -69,7 +69,13 @@ try {
 | `encryption`     | string   | Encryption algorithm                     | `'aes-256-cbc'`             | `null`                      |
 | `encryptionKey`  | string   | Key (length varies by algorithm)         | 64-char hex for AES-256     | `null`                      |
 | `noRepeat`       | boolean  | Reject duplicate data                    | `true`/`false`              | `false`                     |
-| `autoPrimaryKey` | boolean  | Auto-create unique IDs (__id)            | `true`/`false`              | `true`                      |
+| `autoPrimaryKey` | string  | Auto-create unique IDs (_id)             | `true`/`false`/`'id'`       | `true`                      |
+
+
+- ### autoPrimaryKey
+  - `true`: Auto-create unique IDs (`_id`) for each document
+  - `false`: No auto-create
+  - `string`: Put your own id field name (e.g., `'id'`, `'key'`)
 
 <br><br>
 <a id="operations"></a>
@@ -106,6 +112,54 @@ if `noRepeat: true` and repeating data is detected
 ```
 
 <hr>
+
+### Update Item
+```js
+// Structure
+db.edit('collection', 
+    { key: 'value' },     // find condition
+    { key: 'new_value' }  // new data
+);
+
+// Example
+db.edit('accounts', 
+    { username: 'evelocore' },
+    {
+        name: 'EveloCore Official',
+        email: 'updated@gmail.com'
+    }
+);
+```
+> Output
+```bash
+{ success: true, modifiedCount: 1 }
+```
+if find condition not matched
+```bash
+{ err: 'No matching records found', code: 'NO_MATCH' }
+```
+if `noRepeat: true` and repeating data is detected
+```bash
+{ err: 'Edit would create duplicate data (noRepeat enabled)', code: 'DUPLICATE_DATA' }
+```
+
+<hr>
+
+### Delete
+```js
+// Structure
+db.delete('collection', {
+    key: 'value'
+});
+
+// Example
+db.delete('accounts', {
+    username: 'evelocore'
+});
+```
+
+<hr>
+
 
 ### Find
 ```js
@@ -211,52 +265,23 @@ console.log(exists)
 ```bash
 true
 ```
-
 <hr>
 
-### Update
+### Count Items
 ```js
 // Structure
-db.edit('collection', 
-    { key: 'value' },     // find condition
-    { key: 'new_value' }  // new data
-);
+const count = db.count('collection');
 
 // Example
-db.edit('accounts', 
-    { username: 'evelocore' },
-    {
-        name: 'EveloCore Official',
-        email: 'updated@gmail.com'
-    }
-);
+const count = db.count('accounts');
+console.log(count)
 ```
 > Output
 ```bash
-{ success: true, modifiedCount: 1 }
-```
-if find condition not matched
-```bash
-{ err: 'No matching records found', code: 'NO_MATCH' }
-```
-if `noRepeat: true` and repeating data is detected
-```bash
-{ err: 'Edit would create duplicate data (noRepeat enabled)', code: 'DUPLICATE_DATA' }
-```
-
-<hr>
-
-### Delete
-```js
-// Structure
-db.delete('collection', {
-    key: 'value'
-});
-
-// Example
-db.delete('accounts', {
-    username: 'evelocore'
-});
+{
+    success: true,
+    count: 25
+}
 ```
 
 <hr>
@@ -435,6 +460,7 @@ try {
         extension: 'db',
         noRepeat: true,
         encode: 'json',
+        autoPrimaryKey: 'key' // auto incrementing key
         // Start unencrypted to test conversion
     });
 } catch (err) {
