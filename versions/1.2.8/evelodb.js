@@ -316,21 +316,20 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
-        let db = this.readFileData(fullPath);
+        let db = this.readFileData(fullPath)
 
-        const originalLength = db.length;
+        const filteredData = db.filter(item => {
+            return !Object.entries(conditions).every(([key, value]) => {
+                if (typeof value === 'object') {
+                    return deepCompare(item[key], value);
+                } else {
+                    return item[key] === value;
+                }
+            });
+        });
 
-        // Filter out matching items
-        const filteredData = db.filter(item => !this.matchesConditions(item, conditions));
-
-        const deletedCount = originalLength - filteredData.length;
-
-        this.writeFileData(fullPath, filteredData);
-
-        return {
-            success: true,
-            deletedCount
-        };
+        this.writeFileData(fullPath, filteredData)
+        return { success: true };
     }
 
     inject(collection, data) {
@@ -347,11 +346,14 @@ class eveloDB {
         if (!conditions) return { err: 'conditions required!' };
 
         const fullPath = this.getFilePath(collection);
+        //if (!fs.existsSync(fullPath)) return { err: 404 };
         if (!fs.existsSync(fullPath)) return [];
 
-        const db = this.readFileData(fullPath);
+        let db = this.readFileData(fullPath)
 
-        return db.filter(item => this.matchesConditions(item, conditions));
+        return db.filter(item => {
+            return Object.entries(conditions).every(([key, value]) => item[key] === value);
+        });
     }
 
     findOne(collection, conditions) {
@@ -359,11 +361,14 @@ class eveloDB {
         if (!conditions) return { err: 'conditions required!' };
 
         const fullPath = this.getFilePath(collection);
+        //if (!fs.existsSync(fullPath)) return { err: 404 };
         if (!fs.existsSync(fullPath)) return null;
 
-        const db = this.readFileData(fullPath);
+        let db = this.readFileData(fullPath)
 
-        return db.find(item => this.matchesConditions(item, conditions)) || null;
+        return db.find(item => {
+            return Object.entries(conditions).every(([key, value]) => item[key] === value);
+        }) || null;
     }
 
     search(collection, conditions) {
@@ -371,26 +376,17 @@ class eveloDB {
         if (!conditions) return { err: 'conditions required!' };
 
         const fullPath = this.getFilePath(collection);
+        //if (!fs.existsSync(fullPath)) return { err: 404 };
         if (!fs.existsSync(fullPath)) return [];
 
-        const db = this.readFileData(fullPath);
+        let db = this.readFileData(fullPath)
 
         return db.filter(item => {
             return Object.entries(conditions).every(([key, value]) => {
-                const field = item[key];
-
-                if (field === undefined || field === null) return false;
-
-                // If value is a regex object
-                if (value && typeof value === 'object' && value.$regex) {
-                    const pattern = value.$regex;
-                    const flags = value.$options || 'i';
-                    const regex = new RegExp(pattern, flags);
-                    return regex.test(field.toString());
+                if (item[key] !== undefined && item[key] !== null) {
+                    return item[key].toString().match(new RegExp(value, 'i'));
                 }
-
-                // Simple substring match (like search)
-                return field.toString().toLowerCase().includes(value.toString().toLowerCase());
+                return false;
             });
         });
     }
@@ -443,6 +439,7 @@ class eveloDB {
     }
 
     edit(collection, conditions, newData) {
+        // Validate required parameters
         if (!collection) return { err: 'Collection name required' };
         if (!conditions) return { err: 'Conditions required' };
         if (!newData) return { err: 'New data required' };
@@ -450,20 +447,29 @@ class eveloDB {
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
 
-        let db = this.readFileData(fullPath);
+        // Load and decrypt data if encrypted
+        let db = this.readFileData(fullPath)
+
         let editedCount = 0;
         let duplicateFound = false;
 
+        // Find and update matching items
         const updatedDb = db.map(item => {
-            if (this.matchesConditions(item, conditions)) {
+            // Check if item matches conditions
+            if (Object.entries(conditions).every(([key, value]) => {
+                return item[key] === value || deepCompare(item[key], value);
+            })) {
+                // Create the would-be updated object
                 const updatedItem = { ...item, ...newData };
 
+                // Check for duplicates if noRepeat is enabled
                 if (this.config.noRepeat) {
                     const isDuplicate = db.some(existingItem => {
+                        // Skip comparing with itself
                         if (existingItem.__id && item.__id && existingItem.__id === item.__id) {
                             return false;
                         }
-
+                        // Compare all fields except auto-generated ones
                         return Object.keys(newData).every(key => {
                             if (key === '__id') return false;
                             return deepCompare(existingItem[key], updatedItem[key]);
@@ -472,14 +478,13 @@ class eveloDB {
 
                     if (isDuplicate) {
                         duplicateFound = true;
-                        return item;
+                        return item; // Return original item without changes
                     }
                 }
 
                 editedCount++;
                 return updatedItem;
             }
-
             return item;
         });
 
@@ -494,7 +499,9 @@ class eveloDB {
             return { err: 'No matching records found', code: 'NO_MATCH' };
         }
 
-        this.writeFileData(fullPath, updatedDb);
+        // Save updated data
+        this.writeFileData(fullPath, updatedDb)
+
         return {
             success: true,
             modifiedCount: editedCount
@@ -618,32 +625,6 @@ class eveloDB {
             } else {
                 console.error(`Item is missing a token:`, item);
             }
-        });
-    }
-
-    matchesConditions(item, conditions) {
-        return Object.entries(conditions).every(([key, value]) => {
-            const fieldValue = item[key];
-
-            // Handle MongoDB-like operators
-            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                return Object.entries(value).every(([op, condVal]) => {
-                    switch (op) {
-                        case '$eq': return fieldValue === condVal;
-                        case '$ne': return fieldValue !== condVal;
-                        case '$gt': return fieldValue > condVal;
-                        case '$gte': return fieldValue >= condVal;
-                        case '$lt': return fieldValue < condVal;
-                        case '$lte': return fieldValue <= condVal;
-                        case '$in': return Array.isArray(condVal) && condVal.includes(fieldValue);
-                        case '$nin': return Array.isArray(condVal) && !condVal.includes(fieldValue);
-                        default: return false; // unknown operator
-                    }
-                });
-            }
-
-            // Default exact match
-            return fieldValue === value;
         });
     }
 

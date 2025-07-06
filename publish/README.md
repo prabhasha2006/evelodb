@@ -5,7 +5,7 @@
   <b>EveloDB</b>
   <br>
 </h1>
-<h3 align="center">An awesome local database management system with nodejs. Made by Evelocore. With B-tree Operations & AES Encryption.</h3>
+<h3 align="center">An awesome local database management system with nodejs. Made by Evelocore. With B-tree Operations.</h3>
 <br>
 <hr>
 
@@ -13,28 +13,25 @@
 - Node.js
 
 ## Table of Contents
-- [Installation](#installation)
-- [Operations](#operations)
-- [Encryptions](#encryptions)
-- [Change Config](#changeconfig)
-- [Testing Script](#testing)
-- [Use BSON binary encoded](#usebson)
-- [Features](#features)
+- [📥 Installation](#installation)
+- [🔢 Comparison Operators](#comparison-operators)
+- [⚙️ Operations](#operations)
+- [📝 Use BSON binary encoded](#usebson)
+- [🔐 Encryptions](#encryptions)
+- [🔄 Change Config](#changeconfig)
+- [💡 Features](#features)
+- [📈 Changelog](#changelog)
+- [🌍 EveloDB Server](#server)
 
 <br>
 
 <a id="installation"></a>
 # 📥 Installation
 
-### Via npm
+### Npm Install
 ```bash
 npm i evelodb
 ```
-
-### Manual Installation
-- Download `evelodb.js`
-- Place it in your project directory
-- First run creates `./evelodatabase/` automatically
 
 ## Import
 ```js
@@ -78,6 +75,24 @@ try {
   - `string`: Put your own id field name (e.g., `'id'`, `'key'`)
 
 <br><br>
+
+<a id="comparison-operators"></a>
+# 🔢 Comparison Operators
+Used to filter with conditions like greater than, less than, equal, etc.
+
+| Operator | Description             | Example                                 |
+|----------|-------------------------|-----------------------------------------|
+| `$eq`    | Equal                   | `{ age: { $eq: 25 } }`                  |
+| `$ne`    | Not equal               | `{ age: { $ne: 25 } }`                  |
+| `$gt`    | Greater than            | `{ age: { $gt: 25 } }`                  |
+| `$gte`   | Greater than or equal   | `{ age: { $gte: 25 } }`                 |
+| `$lt`    | Less than               | `{ age: { $lt: 25 } }`                  |
+| `$lte`   | Less than or equal      | `{ age: { $lte: 25 } }`                 |
+| `$in`    | Matches any in an array | `{ status: { $in: ["active", "pending"] } }` |
+| `$nin`   | Not in array            | `{ status: { $nin: ["inactive"] } }`    |
+
+
+<br><br>
 <a id="operations"></a>
 # ⚙️ Operations
 
@@ -90,10 +105,10 @@ db.create('collection', {
 
 // Example
 db.create('collection', {
-    username: 'evelocore',
+    username: 'john',
     name: {
-        firstname: 'Kumuthu',
-        lastname: 'Prabhasha'
+        firstname: 'John',
+        lastname: 'Doe'
     },
     email: 'example@gmail.com'
 });
@@ -104,7 +119,7 @@ db.create('collection', {
 ```
 if `autoPrimaryKey: true`
 ```bash
-{ success: true, __id: 'mcbdb90d-ajl393' }
+{ success: true, _id: 'mcbdb90d-ajl393' }
 ```
 if `noRepeat: true` and repeating data is detected
 ```bash
@@ -123,9 +138,9 @@ db.edit('collection',
 
 // Example
 db.edit('accounts', 
-    { username: 'evelocore' },
+    { username: 'john' },
     {
-        name: 'EveloCore Official',
+        name: 'John Smith',
         email: 'updated@gmail.com'
     }
 );
@@ -153,11 +168,19 @@ db.delete('collection', {
 });
 
 // Example
-db.delete('accounts', {
-    username: 'evelocore'
+db.delete('users', {
+    name: 'John Doe'
 });
-```
 
+// Example with options
+console.log(db.delete('users', {
+    age: { $lt: 18 }
+}))
+```
+> Output
+```bash
+{ success: true, deletedCount: 2 }
+```
 <hr>
 
 
@@ -169,8 +192,9 @@ const result = db.find('collection', {
 });
 
 // Example
-const user = db.find('collection', {
-    username: 'evelocore'
+const user = db.find('users', {
+    name: 'john',
+    age: { $gt: 18 }
 });
 console.log(user)
 ```
@@ -178,9 +202,13 @@ console.log(user)
 ```bash
 [
   {
-    username: 'evelocore',
-    name: 'Evelocore',
-    developer: 'K.Prabhasha',
+    name: 'john',
+    age: 19,
+    email: 'example@gmail.com'
+  },
+  {
+    name: 'john',
+    age: 24,
     email: 'example@gmail.com'
   }
 ]
@@ -200,17 +228,16 @@ const result = db.findOne('collection', {
 });
 
 // Example
-const user = db.findOne('collection', {
-    username: 'evelocore'
+const user = db.findOne('users', {
+    username: 'banana'
 });
 console.log(user)
 ```
 > Output
 ```bash
 {
-    username: 'evelocore',
-    name: 'Evelocore',
-    developer: 'K.Prabhasha',
+    username: 'banana',
+    name: 'Test User',
     email: 'example@gmail.com'
 }
 ```
@@ -229,8 +256,13 @@ const result = db.search('collection', {
 });
 
 // Example
-const user = db.search('collection', {
-    username: 'evelo'
+const user = db.search('users', {
+    name: 'Joh'
+});
+
+// Example with options
+const user = db.search('users', {
+    name: { $regex: '^joh', $options: 'i' }  // Matches names starting with "joh", case-insensitive
 });
 console.log(user)
 ```
@@ -238,9 +270,8 @@ console.log(user)
 ```bash
 [
   {
-    username: 'evelocore',
-    name: 'Evelocore',
-    developer: 'K.Prabhasha',
+    name: 'John Doe',
+    age: 25,
     email: 'example@gmail.com'
   }
 ]
@@ -327,6 +358,49 @@ db.drop('accounts');
 ```
 
 <br><br>
+
+<a id="usebson"></a>
+# 📝 Use BSON encoded
+
+> ###  Binary Serialized Object Notation with EveloDB
+
+- EveloDB can handle both JSON and BSON encoded data. Here's how to use BSON encoded data with eveloDB: 
+- JSON use string for keys, while BSON use ObjectId for keys.
+- ⚠️ Note: BSON encoding doesn't support encryption. It allways unreadable.
+
+### Configuration with BSON encoding
+```js
+const eveloDB = require('evelodb')
+let db
+try {
+    db = new eveloDB({
+        directory: './evelodatabase',
+        extension: 'db', // default 'bson'
+        encode: 'bson',
+    })
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
+```
+- `encode: 'bson'` for BSON encoding
+- `encode: 'json'` for JSON encoding (default)
+
+### Why JSON is faster than BSON?
+- BSON requires binary decode `BSON.deserialize` before JS can use it.
+- JSON uses `JSON.parse`, which is highly optimized in V8 (Node.js engine).
+- BSON spec has a hard cap: 16,777,216 bytes (~16MB) per document.
+
+### What happend when JSON + Encryption?
+- BSON is faster than JSON when use encryptions.
+- Because BSON doesn't want aditional encryption.
+
+### Summery
+- JSON is faster than BSON when doesn't use encryption.
+- If you want unreadable database, use BSON
+
+<br><br>
+
 <a id="encryptions"></a>
 # 🔐 Encryptions
 
@@ -440,299 +514,11 @@ const res = db.changeConfig({
 
 <br><br>
 
-<a id="testing"></a>
-# ✅ Testing with Examples
-
-- Copy `test.js` file to your project directory and run:
-
-<details>
-<summary><code>Show Script</code></summary>
-
-```js
-// This is a test file for the EveloDB module.
-
-const eveloDB = require('evelodb');
-let db
-
-// Initialize DB
-try {
-    db = new eveloDB({
-        extension: 'db',
-        noRepeat: true,
-        encode: 'json',
-        autoPrimaryKey: 'key' // auto incrementing key
-        // Start unencrypted to test conversion
-    });
-} catch (err) {
-    console.error('Init Error:', err.message);
-    process.exit(1);
-}
-
-// ===== TEST FLOW =====
-
-const testUser = { name: 'John Doe', age: 30 };
-const query = { age: 30 };
-const new_query = { age: 40 };
-const search_query = { name: 'Joh' };
-let createdId;
-
-// Create Data
-console.log('\n✅ Create Data');
-try {
-    const res = db.create('users', testUser);
-    createdId = res.__id;
-    console.log(`Create Result:`, res);
-} catch (err) {
-    console.error('Create Error:', err.message);
-}
-
-// Find Data
-console.log('\n🔍 Find Before Conversion');
-try {
-    const res = db.find('users', query);
-    console.log(`Find Result:`, res);
-} catch (err) {
-    console.error('Find Error:', err.message);
-}
-
-// Search Data
-console.log('\n🔍 Search by a piece of value');
-try {
-    const res = db.search('users', search_query);
-    console.log(`Find Result:`, res);
-} catch (err) {
-    console.error('Find Error:', err.message);
-}
-
-// Convert to encrypted format
-console.log('\n🔐 Convert to Encrypted Format');
-try {
-    const res = db.changeConfig({
-        from: {},
-        to: {
-            encryption: 'aes-128-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef'
-        }
-    });
-    console.log('Conversion Result:', res);
-} catch (err) {
-    console.error('Conversion Error:', err.message);
-}
-
-// Initialize with new config
-try {
-    db = new eveloDB({
-        directory: './evelodatabase',
-        extension: 'db',
-        noRepeat: true,
-        encryption: 'aes-128-cbc',
-        encryptionKey: '0123456789abcdef0123456789abcdef'
-    });
-} catch (err) {
-    console.error('Re-init Error:', err.message);
-}
-
-// Find Data Again
-console.log('\n🔍 Try Reading Encrypted With New DB Config');
-try {
-    const res = db.find('users', query);
-    console.log(`Find Result:`, res);
-} catch (err) {
-    console.error('Find Error:', err.message);
-}
-
-// Edit Data
-console.log('\n🔍 Editing data');
-try {
-    const res = db.edit('users', query, new_query);
-    console.log(`Editing Result:`, res);
-} catch (err) {
-    console.error('Edit Error:', err.message);
-}
-
-// Find Data Again
-console.log('\n🔍 Find old object again after edit');
-try {
-    const res = db.find('users', query);
-    console.log(`Find Result:`, res);
-} catch (err) {
-    console.error('Find Error:', err.message);
-}
-
-// Find Data Again
-console.log('\n🔍 Find new object again after edit');
-try {
-    const res = db.find('users', new_query);
-    console.log(`Find Result:`, res);
-} catch (err) {
-    console.error('Find Error:', err.message);
-}
-
-// Convert config back to plain JSON
-console.log('\n🔓 Convert Back to Plain JSON');
-try {
-    const res = db.changeConfig({
-        from: {
-            encryption: 'aes-128-cbc',
-            encryptionKey: '0123456789abcdef0123456789abcdef'
-        },
-        to: {}
-    });
-    console.log('Conversion Result:', res);
-} catch (err) {
-    console.error('Conversion Error:', err.message);
-}
-
-// Initialize with new config
-try {
-    db = new eveloDB({
-        extension: 'db',
-        noRepeat: true
-    });
-} catch (err) {
-    console.error('Re-init Error:', err.message);
-}
-
-// Delete Data
-console.log('\n🧹 Clean Up');
-try {
-    const res = db.delete('users', new_query);
-    console.log(`Delete Result:`, res);
-} catch (err) {
-    console.error('Delete Error:', err.message);
-}
-
-// Reset collection
-console.log('\n🧹 Drop Collection')
-try {
-    const res = db.drop('users');
-    console.log(`Drop Result:`, res);
-} catch (err) {
-    console.error('Drop Error:', err.message);
-}
-```
-</details>
-<br><br>
-
-<a id="usebson"></a>
-# 📝 Use BSON encoded
-
-> ###  Binary Serialized Object Notation with EveloDB
-
-- EveloDB can handle both JSON and BSON encoded data. Here's how to use BSON encoded data with eveloDB: 
-- JSON use string for keys, while BSON use ObjectId for keys.
-- ⚠️ Note: BSON encoding doesn't support encryption. It allways unreadable.
-
-### Configuration with BSON encoding
-```js
-const eveloDB = require('evelodb')
-let db
-try {
-    db = new eveloDB({
-        directory: './evelodatabase',
-        extension: 'db', // default 'bson'
-        encode: 'bson',
-    })
-} catch (err) {
-    console.error('Init Error:', err.message);
-    process.exit(1);
-}
-```
-- `encode: 'bson'` for BSON encoding
-- `encode: 'json'` for JSON encoding (default)
-
-## Benchmark test JSON vs BSON
-
-<details>
-<summary><code>Show Result</code></summary>
-Source code:
-
-```js
-const eveloDB = require('evelodb');
-let db
-
-const test = 'json' // 'json' or 'bson'
-
-try {
-    db = new eveloDB({
-        extension: test,
-        encode: test
-    });
-} catch (err) {
-    console.error('Init Error:', err.message);
-    process.exit(1);
-}
-
-const testUser = {
-    name: 'John Doe',
-    age: 40,
-    photo: '[ 96MB base64 image string and test ]',
-}
-
-// Create Data
-function createData() {
-    console.log('\n✅ Create Data');
-    try {
-        db.create('users', testUser);
-    } catch (err) {
-        console.error('Create Error:', err.message);
-    }
-}
-
-// Find Data
-function findData() {
-    let startTime = Date.now();
-    try {
-        const res = db.find('users', { name: 'John Doe' });
-        if (res.length > 0) {
-            const t = Date.now() - startTime;
-            console.log(`Find Result Time taken: ${t}ms - ${test.toLocaleUpperCase()}`);
-        }
-    } catch (err) {
-        console.error('Find Error:', err.message);
-    }
-}
-
-
-for (let i = 0; i < 180; i++) {
-    createData()
-}
-
-findData()
-```
-
-Result:
-```bash
-680KB -> Find Result Time taken: 1ms - JSON 
-680KB -> Find Result Time taken: 4ms - BSON
-
-19157KB -> Find Result Time taken: 40ms - JSON
-17331KB -> Find Result Time taken: 50ms - BSON
-```
-
-After trying to create 210+ data - result:
-```js
-for (let i = 0; i < 210; i++) {
-    createData()
-}
-```
-```bash
-20115KB -> Find Result Time taken: 41ms - JSON
-BSON -> Create Error: The value of "offset" is out of range. It must be >= 0 && <= 17825792. Received 17825794
-```
-
-## Why JSON is faster than BSON?
-- BSON requires binary decode `BSON.deserialize` before JS can use it.
-- JSON uses `JSON.parse`, which is highly optimized in V8 (Node.js engine).
-- BSON spec has a hard cap: 16,777,216 bytes (~16MB) per document.
-</details>
-
-<br><br>
-
 <a id="features"></a>
 # 💡 Features
 - ✓ JSON-based storage
 - ✓ BSON-based storage
+- ✓ Powerful filtering support
 - ✓ AES Encryption
 - ✓ Custom path and extension
 - ✓ B-Tree indexing
@@ -741,10 +527,99 @@ BSON -> Create Error: The value of "offset" is out of range. It must be >= 0 && 
 - ✓ Auto Primary Key option
 
 <hr>
+
+<br><br>
+
+<a id="changelog"></a>
+# 📈 Changelog
+- 1.2.9
+  - Comparison Operators
+  - Improve find, search, update, delete
+- 1.2.8
+  - No Repeat option
+  - Auto Primary Key option
+  - Add custom key for primary key
+- 1.2.6
+  - Fixed some bugs
+- 1.2.5
+  - BSON-based storage
+  - Binary Serialized Object Notation with EveloDB
+- 1.2.3
+  - Improve AES Encryption for JSON
+- 1.2.1
+  - AES Encryption for JSON
+- 1.1.1
+  - Custom path
+  - Custom extension
+- 1.0.9
+  - Improve B-Tree Operations
+- 1.0.6
+  - B-Tree indexing system
+
+<hr>
+<br><br>
+
+<a id="server"></a>
+# 🌍 EveloDB Server
+
+> 📝 **Note:** EveloDB Server is currently under development and not officially released.
+
+**EveloDB Server** is a lightweight, powerful, and flexible server built on top of the local BSON-based DBMS **eveloDB**. It provides an all-in-one solution to manage local databases with a user-friendly UI and secure backend system.
+
+---
+
+## 🚀 Features
+
+- 📦 **Standalone Application**
+  - Easily install and run as a desktop/server app.
+
+- 🖥️ **Modern UI Interface**
+  - Manage databases and collections through a clean web interface.
+
+- 🗂️ **Customizable Database Properties**
+  - Each database includes: `name`, `username`, `key`, `colour`, and `icon`.
+
+- 🔐 **Secure Login System**
+  - Easy and secure login with key-based access.
+
+- 👥 **User Management**
+  - Supports admin/user roles with access control.
+
+- ✏️ **Code & Template Editor**
+  - Edit collection templates directly in the browser.
+
+- 🌐 **CORS Origin Control**
+  - Manage which frontend origins can access your databases.
+
+- 📤📥 **Import/Export Collections**
+  - Backup or import collections as **JSON** or **BSON** files.
+
+- 🧩 **eveloDB Integration**
+  - Fully powered by `eveloDB` and accessible via `evelodb-global` npm package.
+
+---
+
+## 📦 Coming Soon
+Stay tuned for official release, installation guides, and usage documentation!
+
 <br>
 
+## 📢 Stay Connected
+
+Follow us for updates, announcements, and support:
+<p>
+    <a href="https://evelocore.com" target="_blank"><img src="https://img.shields.io/badge/Website-f79d2f?style=for-the-badge&logo=google-chrome&logoColor=white"/></a>
+    <a href="https://github.com/prabhasha2006" target="_blank"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"/></a>
+    <a href="https://whatsapp.com/channel/0029VaxherLJP212qRX1hH0D" target="_blank"><img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white"/></a>
+    <a href="https://discord.gg/wy2FwTMC" target="_blank"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"/></a>
+    <a href="https://www.facebook.com/profile.php?id=61566785835989" target="_blank"><img src="https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white"/></a>
+</p>
+
+<br>
+
+
 <p align="center">
-Copyright 2024 © <a href="https://evelocore.com">Evelocore</a> - All rights reserved
+Copyright 2025 © <a href="https://evelocore.com">Evelocore</a> - All rights reserved
 </p>
 <p align="center">
 Developed by <a href="https://kp.evelocore.com">K.Prabhasha</a>
