@@ -1,6 +1,6 @@
 // This is a test file for the EveloDB module.
 
-const eveloDB = require('evelodb');
+const eveloDB = require('./evelodb.js');
 let db
 
 // Initialize DB
@@ -38,7 +38,7 @@ try {
 // Find Data
 console.log('\n🔍 Find Before Conversion');
 try {
-    const res = db.find('users', query);
+    const res = db.find('users', query).all()
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -47,7 +47,7 @@ try {
 // Search Data
 console.log('\n🔍 Search by a piece of value');
 try {
-    const res = db.search('users', search_query);
+    const res = db.search('users', search_query).all()
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -84,7 +84,7 @@ try {
 // Find Data Again
 console.log('\n🔍 Try Reading Encrypted With New DB Config');
 try {
-    const res = db.find('users', query);
+    const res = db.find('users', query).all()
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -102,7 +102,7 @@ try {
 // Find Data Again
 console.log('\n🔍 Find old object again after edit');
 try {
-    const res = db.find('users', query);
+    const res = db.find('users', query).all()
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);
@@ -111,7 +111,7 @@ try {
 // Find Data Again
 console.log('\n🔍 Find new object again after edit');
 try {
-    const res = db.find('users', new_query);
+    const res = db.find('users', new_query).all()
     console.log(`Find Result:`, res);
 } catch (err) {
     console.error('Find Error:', err.message);

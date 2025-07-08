@@ -16,6 +16,8 @@
 - [📥 Installation](#installation)
 - [🔢 Comparison Operators](#comparison-operators)
 - [⚙️ Operations](#operations)
+- [🔍 Get Query Result](#query-result)
+- [🧠 AI Analyse](#ai-analyse)
 - [📝 Use BSON binary encoded](#usebson)
 - [🔐 Encryptions](#encryptions)
 - [🔄 Change Config](#changeconfig)
@@ -101,7 +103,7 @@ Used to filter with conditions like greater than, less than, equal, etc.
 // Structure
 db.create('collection', {
     key: 'value'
-});
+})
 
 // Example
 db.create('collection', {
@@ -111,7 +113,7 @@ db.create('collection', {
         lastname: 'Doe'
     },
     email: 'example@gmail.com'
-});
+})
 ```
 > Output
 ```bash
@@ -134,7 +136,7 @@ if `noRepeat: true` and repeating data is detected
 db.edit('collection', 
     { key: 'value' },     // find condition
     { key: 'new_value' }  // new data
-);
+)
 
 // Example
 db.edit('accounts', 
@@ -143,7 +145,7 @@ db.edit('accounts',
         name: 'John Smith',
         email: 'updated@gmail.com'
     }
-);
+)
 ```
 > Output
 ```bash
@@ -165,12 +167,12 @@ if `noRepeat: true` and repeating data is detected
 // Structure
 db.delete('collection', {
     key: 'value'
-});
+})
 
 // Example
 db.delete('users', {
     name: 'John Doe'
-});
+})
 
 // Example with options
 console.log(db.delete('users', {
@@ -189,13 +191,13 @@ console.log(db.delete('users', {
 // Structure
 const result = db.find('collection', {
     key: 'value'
-});
+}).all()
 
 // Example
 const user = db.find('users', {
     name: 'john',
     age: { $gt: 18 }
-});
+}).all()
 console.log(user)
 ```
 > Output
@@ -225,12 +227,12 @@ No result found
 // Structure
 const result = db.findOne('collection', {
     key: 'value'
-});
+})
 
 // Example
 const user = db.findOne('users', {
     username: 'banana'
-});
+})
 console.log(user)
 ```
 > Output
@@ -253,17 +255,18 @@ null
 // Structure
 const result = db.search('collection', {
     key: 'partial_value'
-});
+}).all()
 
 // Example
 const user = db.search('users', {
     name: 'Joh'
-});
+}).all()
 
 // Example with options
 const user = db.search('users', {
     name: { $regex: '^joh', $options: 'i' }  // Matches names starting with "joh", case-insensitive
-});
+}).getList(0, 20)
+
 console.log(user)
 ```
 > Output
@@ -284,12 +287,13 @@ console.log(user)
 // Structure
 const exists = db.check('collection', {
     key: 'value'
-});
+})
 
 // Example
 const exists = db.check('accounts', {
     username: 'evelocore'
-});
+})
+
 console.log(exists)
 ```
 > Output
@@ -301,10 +305,10 @@ true
 ### Count Items
 ```js
 // Structure
-const count = db.count('collection');
+const count = db.count('collection')
 
 // Example
-const count = db.count('accounts');
+const count = db.count('accounts')
 console.log(count)
 ```
 > Output
@@ -317,44 +321,188 @@ console.log(count)
 
 <hr>
 
-### Get full collection
+### Get from all
 ```js
 // Structure
-const result = db.get('collection');
+const result = db.get('collection').all()
 
 // Example
-const users = db.get('accounts');
-console.log(users);
+const users = db.get('accounts').getList(10, 20)
+console.log(users)
 ```
-
-### Inject full collection
-```js
-// Structure
-const result = db.inject('collection', data);
-
-// Example
-const users = db.inject('accounts', [
-  { id: 1, name: 'Evelocore' },
-  { id: 2, name: 'K.Prabhasha' },
-]);
-
-const users = db.inject('appdata', {
-    name: 'Evelodb',
-    description: 'An awesome local DBMS with nodejs',
-    author: 'Evelocore'
-})
-// Also can maintain object using inject() and get()
-```
-
-<hr>
 
 ### Drop Collection
 ```js
 // Structure
-db.drop('collection');
+db.drop('collection')
 
 // Example
-db.drop('accounts');
+db.drop('accounts')
+```
+
+### Write plain data into collection
+```js
+// Structure
+const result = db.writeData('collection', data)
+
+// Example
+const users = db.writeData('accounts', [
+  { id: 1, name: 'John Doe' },
+  { id: 2, name: 'Blue Bird' },
+])
+
+const users = db.writeData('appdata', {
+    name: 'EveloDB',
+    description: 'An awesome local DBMS with nodejs',
+    author: 'Evelocore'
+})
+// Also can maintain object using writeData() and readData()
+```
+
+<hr>
+
+### Read plain data from collection
+```js
+// Structure
+const result = db.readData('collection')
+
+// Example
+const appData = db.readData('appdata')
+console.log(appData)
+```
+
+<br><br>
+
+<a id="query-result"></a>
+# 🔍 Get Query Result
+This is a wrapper that provides chainable methods for working with query results in eveloDB. It enables pagination, sorting, and other data manipulation operations on query results.
+
+## Overview
+The Query Result returned by the following eveloDB methods:
+- db.find(collection, conditions)
+- db.search(collection, conditions)
+- db.get(collection) `when data is an array`
+
+## Examples
+
+### getList
+- Implements pagination by returning a subset of results.
+```js
+// Get first 10 users
+const firstPage = db.find('users', { status: 'active' }).getList(0, 10);
+
+// Get next 10 users (pagination)
+const secondPage = db.find('users', { status: 'active' }).getList(10, 10);
+
+// Get 5 users starting from index 20
+const customPage = db.find('users', { status: 'active' }).getList(20, 5);
+```
+
+### count
+- Returns the total number of items in the result set.
+```js
+// Get total count of active users
+const totalActiveUsers = db.find('users', { status: 'active' }).count();
+
+// Get count of search results
+const searchCount = db.search('products', { name: 'phone' }).count();
+
+// Use for pagination info
+const results = db.find('orders', { status: 'pending' });
+const total = results.count();
+const currentPage = results.getList(0, 20);
+console.log(`Showing ${currentPage.length} of ${total} results`);
+```
+
+### sort
+- Sorts the results using a comparison function.
+```js
+// Sort by name (ascending)
+const sortedByName = db.find('users', { status: 'active' })
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+// Sort by age (descending)
+const sortedByAge = db.find('users', { status: 'active' })
+    .sort((a, b) => b.age - a.age)
+    .getList(0, 20);
+
+// Sort by date (newest first)
+const sortedByDate = db.find('posts', { published: true })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .getList(0, 10);
+```
+
+## Method Chaining
+One of the key features of QueryResult is method chaining, allowing you to combine operations:
+```js
+const db = new eveloDB();
+
+// Chain multiple operations
+const result = db.find('products', { category: 'electronics' })
+    .sort((a, b) => b.price - a.price)  // Sort by price (high to low)
+    .getList(10, 5);                    // Get items 11-15
+
+// Complex chaining example
+const topExpensiveProducts = db.search('products', { name: 'laptop' })
+    .sort((a, b) => b.price - a.price)  // Sort by price descending
+    .getList(0, 3);                     // Get top 3 most expensive
+
+// Get count after sorting (count remains the same)
+const sortedResults = db.find('users', { role: 'admin' })
+    .sort((a, b) => a.name.localeCompare(b.name));
+    
+const totalCount = sortedResults.count();        // Total admins
+const firstPage = sortedResults.getList(0, 10);  // First 10 sorted admins
+```
+
+<br><br>
+
+<a id="ai-analyse"></a>
+# 🧠 AI Analyse
+EveloDB integrates with Google's Generative AI to provide intelligent analysis of your collections.
+
+## AI Analysis Features
+- Analyze collection data using natural language queries
+- Get AI-powered insights from your datasets
+- Filter results before analysis
+- Direct data input option
+
+## Parameters
+
+| Parameter    | Type       | Required | Description                                                                 |
+|--------------|------------|----------|-----------------------------------------------------------------------------|
+| `collection` | string     | No*      | Collection name to analyze (*required if `data` not provided)               |
+| `filter`     | object     | No       | Filter with comparison operators to apply before analysis                               |
+| `data`       | array      | No*      | Direct data input (*required if `collection` not provided)                  |
+| `model`      | string     | Yes      | Gemini model to use (e.g., "gemini-pro", "gemini-2.5-flash")               |
+| `apiKey`     | string     | Yes      | Your Google Generative AI API key                                           |
+| `query`      | string     | Yes      | Natural language query for analysis (max 1024 chars)                        |
+
+## Example
+
+```js
+const res = await db.analyse({
+    collection: 'users',
+    filter: { age: { $gt: 18 } },
+    //data: data,
+    model: 'gemini-2.5-flash',
+    apiKey: 'GEMINI_API_KEY',
+    query: 'Find users with potentially offensive bios'
+})
+
+console.log(res)
+```
+Response:
+```bash
+{
+  success: true,
+  response: {
+    indexes: [ 1, 2, 4 ],
+    reason: "The selected users have bios containing explicit profanity ('F****!'), vulgar expressions ('B****!'), or derogatory/insulting remarks ('This game is trash ****!'), which are all considered potentially offensive.",
+    message: 'Offensive content was identified by the presence of strong expletives, common vulgarisms, or direct negative attacks/insults aimed at others or products.',
+    data: [ [Object], [Object], [Object] ]
+  }
+}
 ```
 
 <br><br>
