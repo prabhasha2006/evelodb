@@ -514,7 +514,7 @@ Response:
 
 - EveloDB can handle both JSON and BSON encoded data. Here's how to use BSON encoded data with eveloDB: 
 - JSON use string for keys, while BSON use ObjectId for keys.
-- ⚠️ Note: BSON encoding doesn't support encryption. It allways unreadable.
+- BSON (Binary JSON) is the optimal format for storing and maintaining database records when human readability is not required.
 
 ### Configuration with BSON encoding
 ```js
