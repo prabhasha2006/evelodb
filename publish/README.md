@@ -51,7 +51,8 @@ try {
         encryption: '<encryption_method>',
         encryptionKey: '<encryption_key>',
         noRepeat: false,
-        auroPrimaryKey: true
+        auroPrimaryKey: true,
+        encode: 'bson'
     })
 } catch (err) {
     console.error('Init Error:', err.message);
@@ -65,10 +66,12 @@ try {
 |------------------|----------|------------------------------------------|-----------------------------|-----------------------------|
 | `directory`      | string   | Where database files are stored          | `'./database'`              | `'./evelodatabase'`         |
 | `extension`      | string   | File extension for DB files              | `'db'`, `'edb'`             | `'json'`                    |
+| `encode`         | string   | Data encoding system (JSON / BSON)       | `'json'` `'bson'`           | `json`                      |
+| `objectId`       | boolean  | Primary key type (ObjectId / String)     | `true`                      | `false`                     |
 | `encryption`     | string   | Encryption algorithm                     | `'aes-256-cbc'`             | `null`                      |
 | `encryptionKey`  | string   | Key (length varies by algorithm)         | 64-char hex for AES-256     | `null`                      |
 | `noRepeat`       | boolean  | Reject duplicate data                    | `true`/`false`              | `false`                     |
-| `autoPrimaryKey` | string  | Auto-create unique IDs (_id)             | `true`/`false`/`'id'`       | `true`                      |
+| `autoPrimaryKey` | string   | Auto-create unique IDs (_id)             | `true`/`false`/`'id'`       | `true`                      |
 
 
 - ### autoPrimaryKey

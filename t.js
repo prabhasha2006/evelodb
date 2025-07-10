@@ -3,15 +3,17 @@ const eveloDB = require('./evelodb.js');
 let db
 try {
     db = new eveloDB({
-        noRepeat: true,
-        autoPrimaryKey: 'key'
+        noRepeat: false,
+        encode: 'bson',
+        autoPrimaryKey: 'key',
+        //objectId: true
     })
 } catch (error) {
     console.error('Failed to initialize database:', error);
     process.exit(1);
 }
 
-//console.log(db.create('users', { name:'Kumuthu', age: 30}))
+console.log(db.create('users', { name:'Kumuthu', age: 30}))
 //console.log(db.edit('users', { age: 30}, { age: 40}))
 /* console.log(db.create('users', {
     name: 'Anuki',
@@ -71,7 +73,7 @@ async function getAIResponse(prompt) {
 }
 
 // Example usage
-(async () => {
+/* (async () => {
     getAIResponse()
 
-})()
+})() */
