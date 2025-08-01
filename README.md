@@ -9,6 +9,11 @@
 <br>
 <hr>
 
+## 📚 Full Documentation
+
+> 👉 **Find the complete EveloDB documentation here:**  
+> [![EveloDB Official Website](https://img.shields.io/badge/EveloDB%20Docs-Visit%20Site-f79d2f?style=for-the-badge&logo=readthedocs&logoColor=white)](https://evelodb.evelocore.com/)
+
 ## Requirements
 - Node.js
 
@@ -51,7 +56,7 @@ try {
         encryption: '<encryption_method>',
         encryptionKey: '<encryption_key>',
         noRepeat: false,
-        auroPrimaryKey: true,
+        autoPrimaryKey: true,
         encode: 'bson'
     })
 } catch (err) {
@@ -749,9 +754,6 @@ const res = db.changeConfig({
   - Fully powered by `eveloDB` and accessible via `evelodb-global` npm package.
 
 ---
-
-## 📦 Coming Soon
-Stay tuned for official release, installation guides, and usage documentation!
 
 <br>
 

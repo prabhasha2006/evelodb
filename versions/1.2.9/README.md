@@ -49,7 +49,7 @@ try {
         encryption: '<encryption_method>',
         encryptionKey: '<encryption_key>',
         noRepeat: false,
-        auroPrimaryKey: true
+        autoPrimaryKey: true
     })
 } catch (err) {
     console.error('Init Error:', err.message);

@@ -1,4 +1,3 @@
-// 1.1.7
 
 const fs = require('fs');
 const { encrypt, decrypt, generateKey } = require('./encryption');
