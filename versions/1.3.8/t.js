@@ -29,7 +29,7 @@ async function a() {
         mirror: false,
         invert: false,
         blackAndWhite: false,
-        brightness: 1,
+        brightness: 0.1,
         contrast: 1,
         maxWidth: 10,
         maxHeight: 10,
@@ -37,10 +37,9 @@ async function a() {
     console.log(img)
     fs.writeFileSync('out.jpg', img.data) 
 }
-a()
 
-//console.log(db.writeFile('image.jpg', fs.readFileSync('./img.jpg')))
-//console.log(db.find('big', {key: 'mf0z1grw_18fxwjz9'}).all())
+//console.log(db.readFile('image.jpg').data)
+console.log(db.find('big', {key: 'mf0z1grw_18fxwjz9'}).all())
 //console.log(db.create('big', {name: 'img', data: 'hello'}))
 //console.log(db.edit('users', { age: 30}, { age: 40}))
 /* console.log(db.create('users', {

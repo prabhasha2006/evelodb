@@ -24,6 +24,8 @@
 - [🔍 Get Query Result](#query-result)
 - [🧠 AI Analyse](#ai-analyse)
 - [📝 Use BSON binary encoded](#usebson)
+- [📁 Store Files](#filehandle)
+- [🖼️ Image Utilities](#filehandleimg)
 - [🔐 Encryptions](#encryptions)
 - [🔄 Change Config](#changeconfig)
 - [💡 Features](#features)
@@ -542,18 +544,100 @@ try {
 - `encode: 'bson'` for BSON encoding
 - `encode: 'json'` for JSON encoding (default)
 
-### Why JSON is faster than BSON?
-- BSON requires binary decode `BSON.deserialize` before JS can use it.
-- JSON uses `JSON.parse`, which is highly optimized in V8 (Node.js engine).
-- BSON spec has a hard cap: 16,777,216 bytes (~16MB) per document.
-
-### What happend when JSON + Encryption?
-- BSON is faster than JSON when use encryptions.
-- Because BSON doesn't want aditional encryption.
-
 ### Summery
 - JSON is faster than BSON when doesn't use encryption.
 - If you want unreadable database, use BSON
+
+<br><br>
+
+<a id="filehandle"></a>
+# 📁 File Store
+
+> ###  EveloDB is a lightweight file storage system for handling any type of file directly in your local storage.
+
+- File Management – Read, write, and delete files easily.
+- Image Utilities – Special functions to process images (resize, compress, transform, ...).
+- Lightweight & Fast – No external database required, works directly with the file system.
+
+### Store image buffer as image.jpg
+```js
+db.writeFile('image.jpg', imageBuffer)
+```
+```bash
+{ success: true }
+```
+
+### Read image.jpg
+```js
+db.readFile('image.jpg')
+```
+```bash
+{
+  success: true,
+  data: <Buffer ff d8 ff e0 00 10 ...>
+}
+```
+
+### Delete profile.pdf
+```js
+db.deleteFile('profile.pdf')
+```
+```bash
+{ success: true }
+```
+
+<br><br>
+
+<a id="filehandleimg"></a>
+# 🖼️ Image Utilities
+
+> ### EveloDB includes built-in utilities to read and process images with ease.
+
+- Resize by pixels or max width/height
+- Adjust brightness & contrast
+- Apply filters (invert, mirror, flip)
+- Control quality and output format
+- Return as Buffer or Base64
+
+### Read image.jpg with preset config
+```js
+(async () => {
+  const result = await db.readImage("image.jpg", {
+    returnBase64: true,
+    quality: 0.8,
+    pixels: 500000, // limit total pixels. 0 = keep original size
+    blackAndWhite: false,
+    mirror: false,
+    upToDown: false,
+    invert: false,
+    brightness: 1, // original
+    contrast: 1 // original
+  });
+
+  console.log(result)
+})()
+```
+```bash
+{
+  success: true,
+  data: "data:image/jpeg;base64,/9j/4AAQSk...",
+  metadata: {
+    filename: "image.jpg",
+    extension: ".jpg",
+    originalSize: 254399,
+    processingApplied: {
+      resized: true,
+      qualityReduced: true,
+      blackAndWhite: true,
+      mirrored: true,
+      flippedVertical: false,
+      inverted: false,
+      brightnessAdjusted: true,
+      contrastAdjusted: true
+    }
+  }
+}
+```
 
 <br><br>
 
@@ -688,6 +772,10 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
+- 1.3.8
+  - Unlimited collection in BSON
+  - File Store
+  - Read images with filters
 - 1.2.9
   - Comparison Operators
   - Improve find, search, update, delete
