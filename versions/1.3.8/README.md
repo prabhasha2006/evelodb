@@ -599,19 +599,35 @@ db.deleteFile('profile.pdf')
 - Control quality and output format
 - Return as Buffer or Base64
 
+### ⚙️ Parameters
+
+| Parameter       | Type    | Default | Description |
+|-----------------|---------|---------|-------------|
+| `returnBase64`  | Boolean | `true`  | If `true`, returns a Base64 Data URL. Otherwise returns a `Buffer`. |
+| `quality`       | Number  | `1`     | Output quality (0.1 – 1). Lower values reduce size. |
+| `pixels`        | Number  | `0`     | Maximum total pixels. `0` = keep original size. Useful for scaling down large images. |
+| `maxWidth`      | Number  | `null`  | Maximum width in pixels. |
+| `maxHeight`     | Number  | `null`  | Maximum height in pixels. |
+| `blackAndWhite` | Boolean | `false` | Converts the image to grayscale. |
+| `mirror`        | Boolean | `false` | Flips the image horizontally. |
+| `upToDown`      | Boolean | `false` | Flips the image vertically. |
+| `invert`        | Boolean | `false` | Inverts image colors. |
+| `brightness`    | Number  | `1`     | Brightness multiplier (`0.1 – 5`). `1` = original. |
+| `contrast`      | Number  | `1`     | Contrast multiplier (`0.1 – 5`). `1` = original. |
+
 ### Read image.jpg with preset config
 ```js
 (async () => {
   const result = await db.readImage("image.jpg", {
     returnBase64: true,
     quality: 0.8,
-    pixels: 500000, // limit total pixels. 0 = keep original size
+    pixels: 500000,
     blackAndWhite: false,
     mirror: false,
     upToDown: false,
     invert: false,
-    brightness: 1, // original
-    contrast: 1 // original
+    brightness: 1,
+    contrast: 1
   });
 
   console.log(result)
