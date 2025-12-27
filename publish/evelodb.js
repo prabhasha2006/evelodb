@@ -1,1 +1,1495 @@
-const _0x412d09=_0x3aef;(function(_0x22241c,_0x53c060){const _0x184284=_0x3aef,_0x5385f0=_0x22241c();while(!![]){try{const _0x326709=-parseInt(_0x184284(0x1b1))/0x1+parseInt(_0x184284(0x1b4))/0x2+parseInt(_0x184284(0x190))/0x3+-parseInt(_0x184284(0x125))/0x4*(parseInt(_0x184284(0x1e7))/0x5)+-parseInt(_0x184284(0x1d5))/0x6*(-parseInt(_0x184284(0x160))/0x7)+-parseInt(_0x184284(0x1ed))/0x8*(-parseInt(_0x184284(0x185))/0x9)+parseInt(_0x184284(0x12c))/0xa;if(_0x326709===_0x53c060)break;else _0x5385f0['push'](_0x5385f0['shift']());}catch(_0x27942a){_0x5385f0['push'](_0x5385f0['shift']());}}}(_0x53fa,0xd5598));const fs=require('fs'),{encrypt,decrypt,generateKey}=require(_0x412d09(0x1a1)),{BSON,ObjectId}=require(_0x412d09(0x145)),{GoogleGenAI}=require(_0x412d09(0x157)),imageProcess=require(_0x412d09(0x1e1)),path=require(_0x412d09(0x15f)),defaultConfig={'directory':_0x412d09(0x15e),'extension':_0x412d09(0x1c3),'tabspace':0x3,'encode':_0x412d09(0x1c3),'encryption':null,'encryptionKey':null,'noRepeat':![],'autoPrimaryKey':!![],'objectId':![]};function _0x53fa(){const _0x34ea23=['length','getChunkFileName','invert','from','splice','traverse','Failed\x20to\x20remove\x20chunk\x20file\x20','utf8','Data\x20must\x20be\x20an\x20array','matchesConditions','trim','.gif','encryption','.ico','$lte','includes','out\x20of\x20range','round','chunkFiles','bson','\x20files\x20including\x20chunks','),\x20storing\x20separately','changeConfig','log','returnBase64','New\x20data\x20required','inject','exports','$options','Not\x20a\x20valid\x20image\x20file','$regex','root','insert','isLeaf','No\x20files\x20found\x20to\x20delete','deleteFile','Deleted\x20','@google/genai','all','getSafeBsonSize','autoPrimaryKey','data\x20required!','quality','message','./evelodatabase','path','7zbZvYq','Invalid\x20collection\x20name.\x20Avoid\x20special\x20characters\x20and\x20spaces.','\x20bytes)','decrypt','Files\x20directory\x20not\x20found','objectId','.svg','isArray','deserialize','noRepeat','test','forEach','No\x20matching\x20data\x20found','Failed\x20to\x20process\x20AI\x20response','get','Failed\x20to\x20process\x20image:\x20','blackAndWhite','sort','totalSize','No\x20matching\x20records\x20found','allFiles','Invalid\x20file\x20name.\x20Avoid\x20special\x20characters.','decodeData','ERR_OUT_OF_RANGE','reset','$gte','.png','filter','replace','Cannot\x20change\x20encryption\x20settings\x20while\x20encoding\x20is\x20not\x20JSON','$eq','Failed\x20to\x20store\x20oversized\x20item:\x20','parse','isBuffer','toLowerCase','size','now','63kiQkZI','hasOwnProperty','getFileChunkInfo','check','Failed\x20to\x20convert\x20','contrast','random','readFileData','directory','toString','Unsupported\x20encryption\x20algorithm:\x20','1455471EdJRNp','cleanupChunkFiles','Duplicate\x20data\x20-\x20record\x20already\x20exists\x20(noRepeat\x20enabled)','encryptionKey','concat','mkdirSync','entries','tabspace','data','\x0a\x20\x20\x20\x20Analyze\x20the\x20following\x20data\x20array\x20according\x20to\x20the\x20specified\x20conditions.\x0a\x20\x20\x20\x20Return\x20a\x20JSON\x20response\x20with\x20the\x20exact\x20structure\x20shown\x20in\x20the\x20example.\x0a\x0a\x20\x20\x20\x20Example\x20Response\x20Format:\x0a\x20\x20\x20\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x22indexes\x22:\x20[0,\x202,\x203],\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x22reason\x22:\x20\x22These\x20items\x20match\x20the\x20criteria\x20because...\x22,\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x22message\x22:\x20\x22Additional\x20insights\x20about\x20the\x20selection\x22\x0a\x20\x20\x20\x20}\x0a\x0a\x20\x20\x20\x20Data\x20to\x20Analyze:\x0a\x20\x20\x20\x20','Error\x20getting\x20stats\x20for\x20','\x0a\x0a\x20\x20\x20\x20Conditions:\x0a\x20\x20\x20\x20','error','analyse','Data\x20must\x20be\x20a\x20Buffer','writeFileData','Collection\x20not\x20found','./encryption','encode','getFilePath','every','encrypt','splitFilePath','unlinkSync','\x20requires\x20','Failed\x20to\x20delete\x20file:\x20','Conditions\x20required','readImage','btree','map','models','basename','drop','1429691bCXGZw','Model\x20is\x20required','generateUniqueId','1161338hJCvqs','readFileSync','object','\x0a\x0a\x20\x20\x20\x20Important\x20Rules:\x0a\x20\x20\x20\x201.\x20Only\x20return\x20valid\x20JSON\x20in\x20the\x20specified\x20format\x0a\x20\x20\x20\x202.\x20\x22indexes\x22\x20must\x20be\x20array\x20of\x20numbers\x20matching\x20data\x20array\x20indices\x0a\x20\x20\x20\x203.\x20\x22reason\x22\x20should\x20explain\x20your\x20selection\x20logic\x0a\x20\x20\x20\x204.\x20Keep\x20the\x20response\x20concise\x20but\x20meaningful\x0a\x20\x20\x20\x20','children','splitChild','mirror','encodeData','delete','Collection\x20name\x20required','insertNonFull','generateContent','count','Files\x20not\x20found','writeData','json','readdirSync','isChunked','min','$nin','/files','Query\x20exceeds\x20maximum\x20length\x20of\x201024\x20characters','writeFile','lastIndexOf','indexes','BSON\x20encoding\x20does\x20not\x20support\x20encryption.\x20Please\x20set\x20\x22encryption\x22\x20and\x20\x22encryptionKey\x22\x20to\x20null\x20or\x20use\x20\x22json\x22\x20encoding.','rmdirSync','code','Encryption\x20key\x20required\x20when\x20encryption\x20is\x20enabled','max','Single\x20item\x20exceeds\x20maximum\x20size\x20(','\x20>\x20','Deleted\x20chunk\x20file:\x20','2802990muOsVb','rebuildBTree','extname','Invalid\x20response\x20format:\x20missing\x20indexes\x20array','Edit\x20would\x20create\x20duplicate\x20data\x20(noRepeat\x20enabled)','Failed\x20to\x20decode\x20data:\x20','conditions\x20required!','File\x20name\x20required','upToDown','order','Query\x20is\x20required','-character\x20hex\x20key\x20(','./imageProcess','File\x20not\x20found','Single\x20file\x20storage\x20failed,\x20proceeding\x20with\x20chunking','Item\x20is\x20missing\x20a\x20token:','PROCESSING_ERROR','brightness','85aYXTFc','Splitting\x20data\x20into\x20','Retrying\x20with\x20smaller\x20chunk\x20size','Image\x20processing\x20error:','Error\x20reading\x20chunk\x20file\x20','keys','194152bBqtLK','config','chunkCount','some','getAllFromBTree','$gt','_id','Cleaned\x20up\x20leftover\x20chunk:\x20','__id','hasOversizedItems','maxHeight','Cannot\x20specify\x20collection\x20when\x20data\x20is\x20provided','existsSync','Failed\x20to\x20read\x20main\x20file\x20','find','.jfif','serialize','pixels','/files/','readData','.avif','floor','edit','maxWidth','warn','collection\x20required!','token','extension','statSync','join','98552XthMjF','Filter\x20must\x20be\x20an\x20object','writeFileSync','push','substring','usesJsonFallback','readFile','10195430mpyHEq','findOne','Valid\x20data\x20object\x20required','$lt','stringify','slice'];_0x53fa=function(){return _0x34ea23;};return _0x53fa();}function deepCompare(_0x109f3d,_0x465b29){const _0x40610a=_0x412d09;if(typeof _0x109f3d===_0x40610a(0x1b6)&&typeof _0x465b29===_0x40610a(0x1b6)){if(Array['isArray'](_0x109f3d)){if(!Array[_0x40610a(0x167)](_0x465b29))return![];if(_0x109f3d[_0x40610a(0x132)]!==_0x465b29[_0x40610a(0x132)])return![];for(let _0x3ac432=0x0;_0x3ac432<_0x109f3d[_0x40610a(0x132)];_0x3ac432++){if(!deepCompare(_0x109f3d[_0x3ac432],_0x465b29[_0x3ac432]))return![];}return!![];}else{const _0x2eedd3=Object['keys'](_0x109f3d),_0x31c943=Object[_0x40610a(0x1ec)](_0x465b29);if(_0x2eedd3[_0x40610a(0x132)]!==_0x31c943['length'])return![];for(let _0x51b579 of _0x2eedd3){if(!deepCompare(_0x109f3d[_0x51b579],_0x465b29[_0x51b579]))return![];}return!![];}}else return _0x109f3d===_0x465b29;}class BTreeNode{constructor(_0x4d36f2){const _0x266ad3=_0x412d09;this[_0x266ad3(0x1ec)]=[],this['children']=[],this[_0x266ad3(0x153)]=_0x4d36f2;}}class BTree{constructor(_0x1ea51d){const _0x290290=_0x412d09;this[_0x290290(0x1de)]=_0x1ea51d,this[_0x290290(0x151)]=new BTreeNode(!![]);}[_0x412d09(0x152)](_0xeaad2d,_0x26490b){const _0xa1514e=_0x412d09;let _0x3a2c29=this[_0xa1514e(0x151)];if(_0x3a2c29[_0xa1514e(0x1ec)][_0xa1514e(0x132)]===this[_0xa1514e(0x1de)]-0x1){let _0x30482a=new BTreeNode(![]);_0x30482a[_0xa1514e(0x1b8)][_0xa1514e(0x128)](_0x3a2c29),this[_0xa1514e(0x1b9)](_0x30482a,0x0),this[_0xa1514e(0x151)]=_0x30482a;}this[_0xa1514e(0x1be)](this[_0xa1514e(0x151)],[_0xeaad2d,_0x26490b]);}[_0x412d09(0x1be)](_0x590aa3,_0x4194ba){const _0x84ee8f=_0x412d09;let _0x44b976=_0x590aa3[_0x84ee8f(0x1ec)]['length']-0x1;if(_0x590aa3[_0x84ee8f(0x153)]){_0x590aa3[_0x84ee8f(0x1ec)][_0x84ee8f(0x128)](null);while(_0x44b976>=0x0&&_0x4194ba[0x0]<_0x590aa3['keys'][_0x44b976][0x0]){_0x590aa3['keys'][_0x44b976+0x1]=_0x590aa3[_0x84ee8f(0x1ec)][_0x44b976],_0x44b976--;}_0x590aa3['keys'][_0x44b976+0x1]=_0x4194ba;}else{while(_0x44b976>=0x0&&_0x4194ba[0x0]<_0x590aa3[_0x84ee8f(0x1ec)][_0x44b976][0x0]){_0x44b976--;}_0x44b976++,_0x590aa3[_0x84ee8f(0x1b8)][_0x44b976]['keys'][_0x84ee8f(0x132)]===this[_0x84ee8f(0x1de)]-0x1&&(this[_0x84ee8f(0x1b9)](_0x590aa3,_0x44b976),_0x4194ba[0x0]>_0x590aa3[_0x84ee8f(0x1ec)][_0x44b976][0x0]&&_0x44b976++),this[_0x84ee8f(0x1be)](_0x590aa3['children'][_0x44b976],_0x4194ba);}}[_0x412d09(0x1b9)](_0x154010,_0x2714f3){const _0x5c9b73=_0x412d09;let _0xef2914=this['order'],_0x5e7a0c=_0x154010[_0x5c9b73(0x1b8)][_0x2714f3],_0x31cc22=new BTreeNode(_0x5e7a0c['isLeaf']);_0x154010[_0x5c9b73(0x1ec)][_0x5c9b73(0x136)](_0x2714f3,0x0,_0x5e7a0c['keys'][Math[_0x5c9b73(0x11c)](_0xef2914/0x2)]),_0x154010['children'][_0x5c9b73(0x136)](_0x2714f3+0x1,0x0,_0x31cc22),_0x31cc22[_0x5c9b73(0x1ec)]=_0x5e7a0c['keys']['splice'](Math['floor'](_0xef2914/0x2)+0x1),!_0x5e7a0c[_0x5c9b73(0x153)]&&(_0x31cc22[_0x5c9b73(0x1b8)]=_0x5e7a0c[_0x5c9b73(0x1b8)]['splice'](Math[_0x5c9b73(0x11c)](_0xef2914/0x2)+0x1));}['traverse'](_0x1a353e){const _0x51ac0c=_0x412d09;let _0x292ab9=[];for(let _0x33ebdf=0x0;_0x33ebdf<_0x1a353e[_0x51ac0c(0x1ec)][_0x51ac0c(0x132)];_0x33ebdf++){!_0x1a353e[_0x51ac0c(0x153)]&&(_0x292ab9=_0x292ab9[_0x51ac0c(0x194)](this[_0x51ac0c(0x137)](_0x1a353e[_0x51ac0c(0x1b8)][_0x33ebdf]))),_0x292ab9['push'](_0x1a353e[_0x51ac0c(0x1ec)][_0x33ebdf][0x1]);}return!_0x1a353e[_0x51ac0c(0x153)]&&_0x1a353e[_0x51ac0c(0x1b8)][_0x51ac0c(0x132)]>_0x1a353e[_0x51ac0c(0x1ec)][_0x51ac0c(0x132)]&&(_0x292ab9=_0x292ab9[_0x51ac0c(0x194)](this[_0x51ac0c(0x137)](_0x1a353e[_0x51ac0c(0x1b8)][_0x1a353e['keys'][_0x51ac0c(0x132)]]))),_0x292ab9;}}class QueryResult{constructor(_0x5a6174){const _0x261ca9=_0x412d09;this['data']=Array[_0x261ca9(0x167)](_0x5a6174)?_0x5a6174:[];}['getList'](_0x22bf2d=0x0,_0x339273=0xa){const _0x3685da=_0x412d09;return this[_0x3685da(0x198)][_0x3685da(0x131)](_0x22bf2d,_0x22bf2d+_0x339273);}[_0x412d09(0x1c0)](){const _0x4f4995=_0x412d09;return this[_0x4f4995(0x198)][_0x4f4995(0x132)];}[_0x412d09(0x171)](_0x4e916f){const _0x28ff5c=_0x412d09;return new QueryResult([...this[_0x28ff5c(0x198)]][_0x28ff5c(0x171)](_0x4e916f));}[_0x412d09(0x158)](){const _0x517a6e=_0x412d09;return this[_0x517a6e(0x198)];}}function _0x3aef(_0x52a2ff,_0x20ef90){const _0x53fa16=_0x53fa();return _0x3aef=function(_0x3aef55,_0x320132){_0x3aef55=_0x3aef55-0x112;let _0x4defcc=_0x53fa16[_0x3aef55];return _0x4defcc;},_0x3aef(_0x52a2ff,_0x20ef90);}class eveloDB{constructor(_0x137cce={}){const _0x29be5c=_0x412d09;this[_0x29be5c(0x1ee)]={...defaultConfig,..._0x137cce};if(this[_0x29be5c(0x1ee)][_0x29be5c(0x1a2)]===_0x29be5c(0x145)&&this[_0x29be5c(0x1ee)][_0x29be5c(0x13e)]&&this[_0x29be5c(0x1ee)][_0x29be5c(0x193)])throw new Error(_0x29be5c(0x1cd));this[_0x29be5c(0x1ee)][_0x29be5c(0x1a2)]===_0x29be5c(0x145)&&(!_0x137cce[_0x29be5c(0x122)]&&(this[_0x29be5c(0x1ee)][_0x29be5c(0x122)]='bson'),this[_0x29be5c(0x1ee)][_0x29be5c(0x197)]=0x0,this[_0x29be5c(0x1ee)][_0x29be5c(0x13e)]=null,this[_0x29be5c(0x1ee)][_0x29be5c(0x193)]=null);if(this[_0x29be5c(0x1ee)][_0x29be5c(0x13e)]){const _0x79d496=this[_0x29be5c(0x1ee)][_0x29be5c(0x193)],_0x367327=this[_0x29be5c(0x1ee)][_0x29be5c(0x13e)];if(!_0x79d496)throw new Error(_0x29be5c(0x1d0));const _0x59a947={'aes-128-cbc':0x20,'aes-192-cbc':0x30,'aes-256-cbc':0x40,'aes-128-gcm':0x20,'aes-256-gcm':0x40},_0x262d6c=_0x59a947[_0x367327];if(!_0x262d6c)throw new Error(_0x29be5c(0x18f)+_0x367327);if(_0x79d496[_0x29be5c(0x132)]!==_0x262d6c)throw new Error(_0x367327['toUpperCase']()+'\x20requires\x20a\x20'+_0x262d6c+_0x29be5c(0x1e0)+_0x262d6c/0x2+_0x29be5c(0x162));}this['btree']=new BTree(0x3),!fs[_0x29be5c(0x113)](this[_0x29be5c(0x1ee)][_0x29be5c(0x18d)])&&fs[_0x29be5c(0x195)](this[_0x29be5c(0x1ee)][_0x29be5c(0x18d)],{'recursive':!![]});}[_0x412d09(0x1a5)](_0x2a452d){const _0x8e7df4=_0x412d09;if(this[_0x8e7df4(0x1ee)][_0x8e7df4(0x1a2)]==='bson')return _0x2a452d;return encrypt(_0x2a452d,this['config'][_0x8e7df4(0x13e)],this['config'][_0x8e7df4(0x193)]);}[_0x412d09(0x163)](_0x5c4e69){const _0x52166e=_0x412d09;if(this[_0x52166e(0x1ee)][_0x52166e(0x1a2)]===_0x52166e(0x145))return _0x5c4e69;return decrypt(_0x5c4e69,this[_0x52166e(0x1ee)]['encryption'],this[_0x52166e(0x1ee)][_0x52166e(0x193)]);}[_0x412d09(0x1bb)](_0x2100a7){const _0xa402d9=_0x412d09;if(this[_0xa402d9(0x1ee)][_0xa402d9(0x1a2)]===_0xa402d9(0x145))try{const _0x2df156={'db':_0x2100a7};return BSON[_0xa402d9(0x117)](_0x2df156);}catch(_0x205971){if(_0x205971[_0xa402d9(0x1cf)]==='ERR_OUT_OF_RANGE'||_0x205971[_0xa402d9(0x15d)][_0xa402d9(0x141)]('out\x20of\x20range'))return console[_0xa402d9(0x11f)]('BSON\x20serialization\x20failed,\x20falling\x20back\x20to\x20JSON\x20for\x20large\x20object'),JSON[_0xa402d9(0x130)](_0x2100a7,null,this[_0xa402d9(0x1ee)]['tabspace']);throw _0x205971;}if(this['config'][_0xa402d9(0x1a2)]===_0xa402d9(0x1c3))return JSON[_0xa402d9(0x130)](_0x2100a7,null,this[_0xa402d9(0x1ee)]['tabspace']);return JSON[_0xa402d9(0x130)](_0x2100a7,null,this[_0xa402d9(0x1ee)][_0xa402d9(0x197)]);}['decodeData'](_0x9f4b35){const _0x1b18e1=_0x412d09;if(this[_0x1b18e1(0x1ee)][_0x1b18e1(0x1a2)]==='bson')try{const {db:_0xa437fe}=BSON['deserialize'](_0x9f4b35);return _0xa437fe;}catch(_0x8bfbd){try{return JSON['parse'](_0x9f4b35[_0x1b18e1(0x18e)]('utf8'));}catch(_0x3dcf8d){throw new Error(_0x1b18e1(0x1da)+_0x8bfbd[_0x1b18e1(0x15d)]+',\x20'+_0x3dcf8d['message']);}}if(this['config'][_0x1b18e1(0x1a2)]===_0x1b18e1(0x1c3))return JSON[_0x1b18e1(0x180)](_0x9f4b35[_0x1b18e1(0x18e)](_0x1b18e1(0x139)));return JSON[_0x1b18e1(0x180)](_0x9f4b35[_0x1b18e1(0x18e)]('utf8'));}[_0x412d09(0x159)](_0x3288e4){const _0x72688a=_0x412d09;if(this[_0x72688a(0x1ee)][_0x72688a(0x1a2)]!=='bson')return Buffer['from'](JSON[_0x72688a(0x130)](_0x3288e4))['length'];try{const _0x207c64={'db':_0x3288e4};return BSON[_0x72688a(0x117)](_0x207c64)['length'];}catch(_0x1f19a1){if(_0x1f19a1['code']==='ERR_OUT_OF_RANGE'||_0x1f19a1[_0x72688a(0x15d)][_0x72688a(0x141)](_0x72688a(0x142)))return Buffer[_0x72688a(0x135)](JSON[_0x72688a(0x130)](_0x3288e4))[_0x72688a(0x132)];throw _0x1f19a1;}}[_0x412d09(0x1a6)](_0x1d2337){const _0x313fcd=_0x412d09,_0x2288ee=_0x1d2337[_0x313fcd(0x1cb)]('.');if(_0x2288ee===-0x1)return{'name':_0x1d2337,'extension':''};return{'name':_0x1d2337[_0x313fcd(0x129)](0x0,_0x2288ee),'extension':_0x1d2337['substring'](_0x2288ee)};}[_0x412d09(0x133)](_0x1c09b3,_0x3e692d){const {name:_0x3a8816,extension:_0x40d9f3}=this['splitFilePath'](_0x1c09b3);if(_0x3e692d===0x0)return _0x1c09b3;return _0x3a8816+'\x20'+_0x3e692d+_0x40d9f3;}[_0x412d09(0x19f)](_0x1aadb3,_0x45aecd){const _0x35b0e2=_0x412d09;if(this['config'][_0x35b0e2(0x1a2)]!==_0x35b0e2(0x145)||!Array[_0x35b0e2(0x167)](_0x45aecd)){const _0x264082=this['config']['encryption']?this[_0x35b0e2(0x1a5)](_0x45aecd):this[_0x35b0e2(0x1bb)](_0x45aecd);return fs[_0x35b0e2(0x127)](_0x1aadb3,_0x264082),this[_0x35b0e2(0x191)](_0x1aadb3),!![];}if(!Array['isArray'](_0x45aecd)){const _0x43af9b=this[_0x35b0e2(0x1ee)][_0x35b0e2(0x13e)]?this[_0x35b0e2(0x1a5)](_0x45aecd):this[_0x35b0e2(0x1bb)](_0x45aecd);return fs[_0x35b0e2(0x127)](_0x1aadb3,_0x43af9b),this[_0x35b0e2(0x191)](_0x1aadb3),!![];}const _0x3aa7e9=0x989680,_0x29d2f7=this[_0x35b0e2(0x159)](_0x45aecd);if(_0x29d2f7<=_0x3aa7e9)try{const _0x478f03=this[_0x35b0e2(0x1ee)][_0x35b0e2(0x13e)]?this[_0x35b0e2(0x1a5)](_0x45aecd):this[_0x35b0e2(0x1bb)](_0x45aecd);return fs[_0x35b0e2(0x127)](_0x1aadb3,_0x478f03),this[_0x35b0e2(0x191)](_0x1aadb3),!![];}catch(_0x3c157d){if(_0x3c157d[_0x35b0e2(0x1cf)]===_0x35b0e2(0x177)||_0x3c157d[_0x35b0e2(0x15d)]['includes'](_0x35b0e2(0x142)))console[_0x35b0e2(0x11f)](_0x35b0e2(0x1e3));else throw _0x3c157d;}const _0x428ebf=[];let _0x19f903=[],_0x1fb93c=0x0;for(const _0x152009 of _0x45aecd){const _0x497887=this[_0x35b0e2(0x159)]([_0x152009]);if(_0x497887>_0x3aa7e9){console[_0x35b0e2(0x11f)](_0x35b0e2(0x1d2)+_0x497887+_0x35b0e2(0x1d3)+_0x3aa7e9+_0x35b0e2(0x147));_0x19f903[_0x35b0e2(0x132)]>0x0&&(_0x428ebf[_0x35b0e2(0x128)]([..._0x19f903]),_0x19f903=[],_0x1fb93c=0x0);_0x428ebf['push']([_0x152009]);continue;}_0x1fb93c+_0x497887>_0x3aa7e9&&_0x19f903['length']>0x0?(_0x428ebf[_0x35b0e2(0x128)]([..._0x19f903]),_0x19f903=[_0x152009],_0x1fb93c=_0x497887):(_0x19f903[_0x35b0e2(0x128)](_0x152009),_0x1fb93c+=_0x497887);}_0x19f903[_0x35b0e2(0x132)]>0x0&&_0x428ebf[_0x35b0e2(0x128)](_0x19f903);console[_0x35b0e2(0x149)](_0x35b0e2(0x1e8)+_0x428ebf[_0x35b0e2(0x132)]+'\x20chunks');for(let _0x19d8b0=0x0;_0x19d8b0<_0x428ebf[_0x35b0e2(0x132)];_0x19d8b0++){const _0x1ade0c=this[_0x35b0e2(0x133)](_0x1aadb3,_0x19d8b0);try{const _0x28ab31=this[_0x35b0e2(0x1ee)][_0x35b0e2(0x13e)]?this['encrypt'](_0x428ebf[_0x19d8b0]):this[_0x35b0e2(0x1bb)](_0x428ebf[_0x19d8b0]);fs[_0x35b0e2(0x127)](_0x1ade0c,_0x28ab31);}catch(_0x33eb32){console['error']('Failed\x20to\x20write\x20chunk\x20'+_0x19d8b0+':',_0x33eb32);if(_0x428ebf[_0x19d8b0]['length']>0x1)console[_0x35b0e2(0x11f)](_0x35b0e2(0x1e9)),this[_0x35b0e2(0x19f)](_0x1ade0c,_0x428ebf[_0x19d8b0]);else throw new Error(_0x35b0e2(0x17f)+_0x33eb32['message']);}}return this['cleanupChunkFiles'](_0x1aadb3,_0x428ebf[_0x35b0e2(0x132)]),!![];}[_0x412d09(0x191)](_0x378437,_0x47fa0a=0x1){const _0x36c4f0=_0x412d09;let _0x34c363=_0x47fa0a;while(!![]){const _0x266c37=this[_0x36c4f0(0x133)](_0x378437,_0x34c363);if(fs[_0x36c4f0(0x113)](_0x266c37)){try{fs[_0x36c4f0(0x1a7)](_0x266c37),console[_0x36c4f0(0x149)](_0x36c4f0(0x1f4)+_0x266c37);}catch(_0x2efdd6){console[_0x36c4f0(0x11f)](_0x36c4f0(0x138)+_0x266c37+':',_0x2efdd6);}_0x34c363++;}else break;}}['readFileData'](_0x2fee67){const _0x46470b=_0x412d09;if(!fs['existsSync'](_0x2fee67))return null;let _0x1f2bc7;try{_0x1f2bc7=this[_0x46470b(0x1ee)][_0x46470b(0x1a2)]==='bson'?fs[_0x46470b(0x1b5)](_0x2fee67):fs['readFileSync'](_0x2fee67,_0x46470b(0x139));}catch(_0x511b9f){return console[_0x46470b(0x19c)](_0x46470b(0x114)+_0x2fee67+':',_0x511b9f),null;}let _0x307611;try{_0x307611=this[_0x46470b(0x1ee)][_0x46470b(0x13e)]?this[_0x46470b(0x163)](_0x1f2bc7):this[_0x46470b(0x176)](_0x1f2bc7);}catch(_0x55f92a){return console['error']('Failed\x20to\x20decode\x20main\x20file\x20'+_0x2fee67+':',_0x55f92a),null;}if(!Array[_0x46470b(0x167)](_0x307611))return _0x307611;const _0x3e297d=[..._0x307611];let _0x21007a=0x1;while(!![]){const _0x26a63d=this['getChunkFileName'](_0x2fee67,_0x21007a);if(!fs[_0x46470b(0x113)](_0x26a63d))break;try{const _0x1e2d65=this[_0x46470b(0x1ee)][_0x46470b(0x1a2)]===_0x46470b(0x145)?fs[_0x46470b(0x1b5)](_0x26a63d):fs[_0x46470b(0x1b5)](_0x26a63d,_0x46470b(0x139)),_0x543b66=this[_0x46470b(0x1ee)][_0x46470b(0x13e)]?this['decrypt'](_0x1e2d65):this[_0x46470b(0x176)](_0x1e2d65);Array[_0x46470b(0x167)](_0x543b66)&&_0x3e297d[_0x46470b(0x128)](..._0x543b66),_0x21007a++;}catch(_0x4817fc){console['warn'](_0x46470b(0x1eb)+_0x26a63d+':',_0x4817fc);break;}}return _0x3e297d;}[_0x412d09(0x187)](_0xc009c7){const _0x4c22d=_0x412d09;if(!fs[_0x4c22d(0x113)](_0xc009c7))return null;const _0x16527c={'isChunked':![],'chunkCount':0x1,'totalSize':0x0,'chunkFiles':[_0xc009c7],'hasOversizedItems':![]};try{const _0x19923d=fs['statSync'](_0xc009c7);_0x16527c['totalSize']=_0x19923d['size'];if(this[_0x4c22d(0x1ee)][_0x4c22d(0x1a2)]===_0x4c22d(0x145)){const _0x18a8af=fs['readFileSync'](_0xc009c7);try{BSON[_0x4c22d(0x168)](_0x18a8af);}catch(_0x581246){_0x16527c[_0x4c22d(0x12a)]=!![];}}}catch(_0x200233){console[_0x4c22d(0x11f)]('Error\x20getting\x20stats\x20for\x20'+_0xc009c7+':',_0x200233);}let _0x4cc458=0x1;while(!![]){const _0x2d2767=this['getChunkFileName'](_0xc009c7,_0x4cc458);if(fs[_0x4c22d(0x113)](_0x2d2767)){_0x16527c[_0x4c22d(0x1c5)]=!![],_0x16527c[_0x4c22d(0x1ef)]++,_0x16527c[_0x4c22d(0x144)][_0x4c22d(0x128)](_0x2d2767);try{const _0x1e278f=fs[_0x4c22d(0x123)](_0x2d2767);_0x16527c[_0x4c22d(0x172)]+=_0x1e278f[_0x4c22d(0x183)],_0x1e278f['size']>0x989680&&(_0x16527c[_0x4c22d(0x1f6)]=!![]);}catch(_0x53c38a){console[_0x4c22d(0x11f)](_0x4c22d(0x19a)+_0x2d2767+':',_0x53c38a);}_0x4cc458++;}else break;}return _0x16527c;}['generateKey'](_0x3828a0){return generateKey(_0x3828a0);}[_0x412d09(0x1a3)](_0x51808c){const _0x7eee16=_0x412d09;return this[_0x7eee16(0x1ee)]['directory']+'/'+_0x51808c+'.'+this['config'][_0x7eee16(0x122)];}['create'](_0x1eb97e,_0x41e4ba){const _0x26fc6=_0x412d09;if(!_0x1eb97e)return{'err':'Collection\x20name\x20required'};if(_0x1eb97e[_0x26fc6(0x141)]('/')||_0x1eb97e[_0x26fc6(0x141)]('\x5c')||_0x1eb97e['includes']('.')||_0x1eb97e[_0x26fc6(0x141)]('\x20'))return{'err':_0x26fc6(0x161)};if(!_0x41e4ba||typeof _0x41e4ba!==_0x26fc6(0x1b6))return{'err':_0x26fc6(0x12e)};const _0x506ac0=this[_0x26fc6(0x1a3)](_0x1eb97e);let _0x593dd0=[];if(fs[_0x26fc6(0x113)](_0x506ac0)){_0x593dd0=this[_0x26fc6(0x18c)](_0x506ac0);if(this[_0x26fc6(0x1ee)][_0x26fc6(0x169)]){const _0x6ddf8d=_0x593dd0['some'](_0x271a77=>{const _0xae8676=_0x26fc6;return Object['keys'](_0x41e4ba)['every'](_0x28bb86=>{const _0x54e989=_0x3aef;if(_0x28bb86===_0x54e989(0x1f5))return!![];return deepCompare(_0x271a77[_0x28bb86],_0x41e4ba[_0x28bb86]);})&&Object[_0xae8676(0x1ec)](_0x41e4ba)[_0xae8676(0x1a4)](_0x357605=>_0x357605 in _0x271a77);});if(_0x6ddf8d)return{'err':_0x26fc6(0x192),'code':'DUPLICATE_DATA'};}}const _0x1be0cc={..._0x41e4ba};let _0x52863c;return this[_0x26fc6(0x1ee)][_0x26fc6(0x15a)]&&(_0x52863c=typeof this['config']['autoPrimaryKey']==='string'&&this[_0x26fc6(0x1ee)][_0x26fc6(0x15a)][_0x26fc6(0x132)]>0x0?this[_0x26fc6(0x1ee)][_0x26fc6(0x15a)]:_0x26fc6(0x1f3),!_0x1be0cc[_0x26fc6(0x186)](_0x52863c)&&(_0x1be0cc[_0x52863c]=this[_0x26fc6(0x1b3)]())),_0x593dd0[_0x26fc6(0x128)](_0x1be0cc),this['writeFileData'](_0x506ac0,_0x593dd0),_0x1be0cc['token']&&this[_0x26fc6(0x1ac)]['insert'](_0x1be0cc[_0x26fc6(0x121)],_0x1be0cc),{'success':!![],..._0x52863c&&_0x1be0cc[_0x52863c]?{[_0x52863c]:_0x1be0cc[_0x52863c]}:{}};}[_0x412d09(0x1bc)](_0x544150,_0x471e29){const _0x2a145e=_0x412d09;if(!_0x544150)return{'err':_0x2a145e(0x120)};if(!_0x471e29)return{'err':_0x2a145e(0x1db)};const _0x2f9fd9=this['getFilePath'](_0x544150);if(!fs[_0x2a145e(0x113)](_0x2f9fd9))return{'err':0x194};let _0x6dbd4f=this[_0x2a145e(0x18c)](_0x2f9fd9);const _0x4c4d94=_0x6dbd4f['length'],_0x7114f0=_0x6dbd4f['filter'](_0x39d54d=>!this[_0x2a145e(0x13b)](_0x39d54d,_0x471e29)),_0x63429=_0x4c4d94-_0x7114f0[_0x2a145e(0x132)];return this['writeFileData'](_0x2f9fd9,_0x7114f0),{'success':!![],'deletedCount':_0x63429};}[_0x412d09(0x14c)](_0x3d9f3a,_0x12f14e){const _0x1fe0d0=_0x412d09;if(!_0x3d9f3a)return{'err':_0x1fe0d0(0x120)};if(!_0x12f14e)return{'err':_0x1fe0d0(0x15b)};const _0x54747d=this['getFilePath'](_0x3d9f3a);return this[_0x1fe0d0(0x19f)](_0x54747d,_0x12f14e),{'success':!![]};}[_0x412d09(0x1c2)](_0xff829a,_0x42a509){const _0x3afc70=_0x412d09;if(!_0xff829a)return{'err':_0x3afc70(0x120)};if(_0xff829a[_0x3afc70(0x141)]('/')||_0xff829a['includes']('\x5c')||_0xff829a[_0x3afc70(0x141)]('.')||_0xff829a[_0x3afc70(0x141)]('\x20'))return{'err':'Invalid\x20collection\x20name.\x20Avoid\x20special\x20characters\x20and\x20spaces.'};if(!_0x42a509)return{'err':'data\x20required!'};const _0x44cf96=this[_0x3afc70(0x1a3)](_0xff829a);return this[_0x3afc70(0x19f)](_0x44cf96,_0x42a509),{'success':!![]};}[_0x412d09(0x115)](_0x17adcf,_0x5e63a9){const _0x4cc59b=_0x412d09;if(!_0x17adcf)return{'err':_0x4cc59b(0x120)};if(!_0x5e63a9)return{'err':'conditions\x20required!'};const _0x17eefd=this[_0x4cc59b(0x1a3)](_0x17adcf);if(!fs['existsSync'](_0x17eefd))return new QueryResult([]);const _0x1686aa=this[_0x4cc59b(0x18c)](_0x17eefd),_0x20ef21=_0x1686aa['filter'](_0x28cbeb=>this['matchesConditions'](_0x28cbeb,_0x5e63a9));return new QueryResult(_0x20ef21);}[_0x412d09(0x12d)](_0x55a7a8,_0x1839cb){const _0x1dd2ef=_0x412d09;if(!_0x55a7a8)return{'err':_0x1dd2ef(0x120)};if(!_0x1839cb)return{'err':_0x1dd2ef(0x1db)};const _0x486181=this[_0x1dd2ef(0x1a3)](_0x55a7a8);if(!fs[_0x1dd2ef(0x113)](_0x486181))return null;const _0x48339a=this[_0x1dd2ef(0x18c)](_0x486181);return _0x48339a['find'](_0x32833e=>this[_0x1dd2ef(0x13b)](_0x32833e,_0x1839cb))||null;}['search'](_0x2ae206,_0x4530c4){const _0x3f505f=_0x412d09;if(!_0x2ae206)return{'err':_0x3f505f(0x120)};if(!_0x4530c4)return{'err':'conditions\x20required!'};const _0x2439d1=this['getFilePath'](_0x2ae206);if(!fs['existsSync'](_0x2439d1))return new QueryResult([]);const _0x50d55c=this['readFileData'](_0x2439d1),_0x294687=_0x50d55c[_0x3f505f(0x17b)](_0x22a57f=>{const _0x5c1396=_0x3f505f;return Object[_0x5c1396(0x196)](_0x4530c4)[_0x5c1396(0x1a4)](([_0x53b074,_0x174c10])=>{const _0x3bf4ef=_0x5c1396,_0x1cc7ca=_0x22a57f[_0x53b074];if(_0x1cc7ca===undefined||_0x1cc7ca===null)return![];if(_0x174c10&&typeof _0x174c10===_0x3bf4ef(0x1b6)&&_0x174c10[_0x3bf4ef(0x150)]){const _0xe83bbf=_0x174c10[_0x3bf4ef(0x150)],_0x5b518b=_0x174c10[_0x3bf4ef(0x14e)]||'i',_0x446ba3=new RegExp(_0xe83bbf,_0x5b518b);return _0x446ba3[_0x3bf4ef(0x16a)](_0x1cc7ca[_0x3bf4ef(0x18e)]());}return _0x1cc7ca[_0x3bf4ef(0x18e)]()[_0x3bf4ef(0x182)]()['includes'](_0x174c10[_0x3bf4ef(0x18e)]()[_0x3bf4ef(0x182)]());});});return new QueryResult(_0x294687);}[_0x412d09(0x16e)](_0x1f6a2d){const _0x2979b0=_0x412d09;if(!_0x1f6a2d)return{'err':_0x2979b0(0x120)};const _0x4987e6=this[_0x2979b0(0x1a3)](_0x1f6a2d);if(!fs[_0x2979b0(0x113)](_0x4987e6))return new QueryResult(undefined);const _0x107963=this[_0x2979b0(0x18c)](_0x4987e6);return new QueryResult(_0x107963);}[_0x412d09(0x11a)](_0x68a06b){const _0x258acc=_0x412d09;if(!_0x68a06b)return{'err':'collection\x20required!'};const _0x315f2c=this[_0x258acc(0x1a3)](_0x68a06b);if(!fs[_0x258acc(0x113)](_0x315f2c))return undefined;const _0xcc87aa=this['readFileData'](_0x315f2c);return _0xcc87aa;}[_0x412d09(0x1c0)](_0x4fadb0){const _0x3a881c=_0x412d09;if(!_0x4fadb0)return{'success':![],'err':'collection\x20required!'};const _0x382ced=this[_0x3a881c(0x16e)](_0x4fadb0)[_0x3a881c(0x158)]();if(!_0x382ced)return{'success':![],'err':_0x3a881c(0x1a0)};if(!Array[_0x3a881c(0x167)](_0x382ced))return{'success':![],'err':'Invalid\x20collection\x20data\x20format'};return{'success':!![],'count':_0x382ced[_0x3a881c(0x132)]};}[_0x412d09(0x188)](_0x36527e,_0x31be80){const _0xd13152=_0x412d09;if(!_0x36527e)return{'err':'collection\x20required!'};if(!_0x31be80)return{'err':'conditions\x20required!'};return this['find'](_0x36527e,_0x31be80)[_0xd13152(0x158)]()[_0xd13152(0x132)]>0x0;}[_0x412d09(0x11d)](_0x3af46b,_0x4639d7,_0x432dec){const _0x5beaaf=_0x412d09;if(!_0x3af46b)return{'err':_0x5beaaf(0x1bd)};if(!_0x4639d7)return{'err':_0x5beaaf(0x1aa)};if(!_0x432dec)return{'err':_0x5beaaf(0x14b)};const _0x473d7d=this[_0x5beaaf(0x1a3)](_0x3af46b);if(!fs[_0x5beaaf(0x113)](_0x473d7d))return{'err':_0x5beaaf(0x1a0),'code':0x194};let _0x4f1f0f=this[_0x5beaaf(0x18c)](_0x473d7d),_0x56e41e=0x0,_0x5f5521=![];const _0x380c6a=_0x4f1f0f['map'](_0x264cf6=>{const _0x1099dc=_0x5beaaf;if(this[_0x1099dc(0x13b)](_0x264cf6,_0x4639d7)){const _0x2bed98={..._0x264cf6,..._0x432dec};if(this[_0x1099dc(0x1ee)][_0x1099dc(0x169)]){const _0x49ce6a=_0x4f1f0f[_0x1099dc(0x1f0)](_0x5232b8=>{const _0x1bc474=_0x1099dc;if(_0x5232b8[_0x1bc474(0x1f5)]&&_0x264cf6['__id']&&_0x5232b8['__id']===_0x264cf6[_0x1bc474(0x1f5)])return![];return Object[_0x1bc474(0x1ec)](_0x432dec)[_0x1bc474(0x1a4)](_0x99b6b=>{const _0x39199a=_0x1bc474;if(_0x99b6b===_0x39199a(0x1f5))return![];return deepCompare(_0x5232b8[_0x99b6b],_0x2bed98[_0x99b6b]);});});if(_0x49ce6a)return _0x5f5521=!![],_0x264cf6;}return _0x56e41e++,_0x2bed98;}return _0x264cf6;});if(_0x5f5521)return{'err':_0x5beaaf(0x1d9),'code':'DUPLICATE_DATA'};if(_0x56e41e===0x0)return{'err':_0x5beaaf(0x173),'code':'NO_MATCH'};return this['writeFileData'](_0x473d7d,_0x380c6a),{'success':!![],'modifiedCount':_0x56e41e};}['drop'](_0x455e3b){const _0x392bd5=_0x412d09;if(!_0x455e3b)return{'err':_0x392bd5(0x120)};const _0x3757f2=this['getFilePath'](_0x455e3b);if(this[_0x392bd5(0x1ee)]['encode']===_0x392bd5(0x145)){let _0x3105ac=0x0,_0x279805=0x0;while(!![]){const _0x58d59b=this[_0x392bd5(0x133)](_0x3757f2,_0x279805);if(fs['existsSync'](_0x58d59b)){try{fs[_0x392bd5(0x1a7)](_0x58d59b),_0x3105ac++,console[_0x392bd5(0x149)](_0x392bd5(0x1d4)+_0x58d59b);}catch(_0x3d8582){console[_0x392bd5(0x11f)]('Failed\x20to\x20delete\x20chunk\x20file\x20'+_0x58d59b+':',_0x3d8582);}_0x279805++;}else break;}return _0x3105ac>0x0?{'success':!![],'deletedCount':_0x3105ac,'message':_0x392bd5(0x156)+_0x3105ac+_0x392bd5(0x146)}:{'err':_0x392bd5(0x154),'code':0x194};}else return fs[_0x392bd5(0x113)](_0x3757f2)?(fs[_0x392bd5(0x1a7)](_0x3757f2),{'success':!![]}):{'err':0x194};}[_0x412d09(0x178)](_0x286aa3){const _0x458022=_0x412d09;return this[_0x458022(0x1b0)](_0x286aa3);}[_0x412d09(0x148)]({from:_0x42d9cf,to:_0xfadc97,collections:_0x4408f2}){const _0x25b7d=_0x412d09;if(this['config'][_0x25b7d(0x1a2)]!==_0x25b7d(0x1c3)&&(_0x42d9cf['encryption']||_0x42d9cf[_0x25b7d(0x193)]||_0xfadc97[_0x25b7d(0x13e)]||_0xfadc97[_0x25b7d(0x193)]))throw new Error(_0x25b7d(0x17d));const _0x1fdc5b=require(_0x25b7d(0x15f)),_0x2cc5f0=fs[_0x25b7d(0x1c4)](_0x42d9cf[_0x25b7d(0x18d)]||this[_0x25b7d(0x1ee)]['directory']),{encrypt:_0x54ddb9,decrypt:_0x130111}=require(_0x25b7d(0x1a1)),_0x4c369b={'aes-128-cbc':0x20,'aes-192-cbc':0x30,'aes-256-cbc':0x40,'aes-128-gcm':0x20,'aes-256-gcm':0x40},_0x29bc7c=(_0x28f9b9,_0x4c4217)=>{const _0x46de5b=_0x25b7d;if(!_0x4c4217)return;if(!_0x28f9b9||_0x28f9b9[_0x46de5b(0x132)]!==_0x4c369b[_0x4c4217])throw new Error(_0x4c4217+_0x46de5b(0x1a8)+_0x4c369b[_0x4c4217]+'\x20hex\x20characters');};_0x29bc7c(_0x42d9cf[_0x25b7d(0x193)],_0x42d9cf[_0x25b7d(0x13e)]),_0x29bc7c(_0xfadc97['encryptionKey'],_0xfadc97[_0x25b7d(0x13e)]);let _0x487036=0x0,_0x5b8cdb=0x0;const _0x229b35=_0x42d9cf[_0x25b7d(0x122)]||this[_0x25b7d(0x1ee)][_0x25b7d(0x122)],_0x8b8da=_0xfadc97[_0x25b7d(0x122)]||this[_0x25b7d(0x1ee)][_0x25b7d(0x122)],_0x458094=_0x42d9cf[_0x25b7d(0x18d)]||this[_0x25b7d(0x1ee)]['directory'],_0x3ced46=_0xfadc97[_0x25b7d(0x18d)]||this['config'][_0x25b7d(0x18d)];!fs[_0x25b7d(0x113)](_0x3ced46)&&fs[_0x25b7d(0x195)](_0x3ced46,{'recursive':!![]});_0x2cc5f0['forEach'](_0x1db94e=>{const _0x300e55=_0x25b7d,_0x1d245a=_0x1fdc5b[_0x300e55(0x1d7)](_0x1db94e)[_0x300e55(0x131)](0x1),_0x1293ce=_0x1fdc5b[_0x300e55(0x1af)](_0x1db94e,'.'+_0x1d245a);if(_0x1d245a!==_0x229b35)return;if(_0x4408f2&&!_0x4408f2[_0x300e55(0x141)](_0x1293ce))return;const _0x455e0b=_0x1fdc5b[_0x300e55(0x124)](_0x458094,_0x1db94e),_0x101475=_0x1fdc5b[_0x300e55(0x124)](_0x3ced46,_0x1293ce+'.'+_0x8b8da);try{const _0x23c6a0=fs[_0x300e55(0x1b5)](_0x455e0b,'utf8'),_0x53dd46=_0x42d9cf[_0x300e55(0x13e)]?_0x130111(_0x23c6a0,_0x42d9cf[_0x300e55(0x13e)],_0x42d9cf[_0x300e55(0x193)]):JSON[_0x300e55(0x180)](_0x23c6a0),_0x96cdb9=_0xfadc97[_0x300e55(0x13e)]?_0x54ddb9(_0x53dd46,_0xfadc97[_0x300e55(0x13e)],_0xfadc97['encryptionKey']):JSON[_0x300e55(0x130)](_0x53dd46,null,0x3);fs[_0x300e55(0x127)](_0x101475,_0x96cdb9),_0x487036++,_0x455e0b!==_0x101475&&fs[_0x300e55(0x113)](_0x455e0b)&&fs[_0x300e55(0x1a7)](_0x455e0b);}catch(_0xa7bc6c){console[_0x300e55(0x19c)](_0x300e55(0x189)+_0x1db94e+':\x20'+_0xa7bc6c[_0x300e55(0x15d)]),_0x5b8cdb++;}});if(_0x458094!==_0x3ced46&&fs[_0x25b7d(0x113)](_0x458094)){const _0x15c356=fs[_0x25b7d(0x1c4)](_0x458094);_0x15c356[_0x25b7d(0x132)]===0x0&&fs[_0x25b7d(0x1ce)](_0x458094,{'recursive':!![]});}return{'success':!![],'converted':_0x487036,'failed':_0x5b8cdb};}async[_0x412d09(0x19d)]({collection:_0x41e1f4,filter:_0x3c3c32,data:_0x96321f,model:_0x40c725,apiKey:_0x2b5d56,query:_0x2d8426}){const _0x66fb65=_0x412d09;if(_0x96321f&&!Array['isArray'](_0x96321f))return{'success':![],'err':_0x66fb65(0x13a)};if(_0x96321f&&_0x41e1f4)return{'success':![],'err':_0x66fb65(0x112)};if(_0x3c3c32&&typeof _0x3c3c32!=='object')return{'success':![],'err':_0x66fb65(0x126)};if(!_0x40c725)return{'success':![],'err':_0x66fb65(0x1b2)};if(!_0x2b5d56)return{'success':![],'err':'API\x20Key\x20is\x20required'};if(!_0x2d8426)return{'success':![],'err':_0x66fb65(0x1df)};if(_0x2d8426['length']>0x400)return{'success':![],'err':_0x66fb65(0x1c9)};var _0x194d4e=_0x96321f||this[_0x66fb65(0x16e)](_0x41e1f4)[_0x66fb65(0x158)]();_0x3c3c32&&(_0x194d4e=_0x194d4e[_0x66fb65(0x17b)](_0xbaf6cb=>this[_0x66fb65(0x13b)](_0xbaf6cb,_0x3c3c32)));if(_0x194d4e[_0x66fb65(0x132)]==0x0)return{'success':![],'err':_0x66fb65(0x16c)};const _0x10508e=new GoogleGenAI({'apiKey':_0x2b5d56}),_0x36478c=_0x66fb65(0x199)+JSON[_0x66fb65(0x130)](_0x194d4e,null,0x2)+_0x66fb65(0x19b)+_0x2d8426+_0x66fb65(0x1b7);try{const _0x306568=await _0x10508e[_0x66fb65(0x1ae)][_0x66fb65(0x1bf)]({'model':_0x40c725,'contents':_0x36478c}),_0x2bf819=_0x306568['text'],_0x2fe64a=_0x2bf819[_0x66fb65(0x17c)](/```json|```/g,'')[_0x66fb65(0x13c)](),_0x1d1d5f=JSON[_0x66fb65(0x180)](_0x2fe64a);if(!_0x1d1d5f['indexes']||!Array['isArray'](_0x1d1d5f[_0x66fb65(0x1cc)]))throw new Error(_0x66fb65(0x1d8));return{'success':!![],'response':{..._0x1d1d5f,'data':_0x1d1d5f[_0x66fb65(0x1cc)][_0x66fb65(0x1ad)](_0x1b9192=>_0x194d4e[_0x1b9192])}};}catch(_0x249324){return console['error']('AI\x20Analysis\x20Error:',_0x249324),{'success':![],'err':_0x249324['message']||_0x66fb65(0x16d)};}}[_0x412d09(0x1d6)](_0x215c53){const _0x38f7b9=_0x412d09;if(!_0x215c53)return{'err':_0x38f7b9(0x120)};const _0x20a145=this['getFilePath'](_0x215c53);if(!fs[_0x38f7b9(0x113)](_0x20a145))return{'err':0x194};let _0x4d8958=this[_0x38f7b9(0x18c)](_0x20a145);this[_0x38f7b9(0x1ac)]=new BTree(0x3),_0x4d8958[_0x38f7b9(0x16b)](_0x21bbff=>{const _0x5ab82d=_0x38f7b9;_0x21bbff[_0x5ab82d(0x121)]?this[_0x5ab82d(0x1ac)][_0x5ab82d(0x152)](_0x21bbff[_0x5ab82d(0x121)],_0x21bbff):console[_0x5ab82d(0x19c)](_0x5ab82d(0x1e4),_0x21bbff);});}[_0x412d09(0x13b)](_0x5ab2f8,_0x4bff46){const _0x2a8371=_0x412d09;return Object['entries'](_0x4bff46)[_0x2a8371(0x1a4)](([_0x2bbc35,_0x570248])=>{const _0x37a862=_0x2a8371,_0x4e5a6b=_0x5ab2f8[_0x2bbc35];if(typeof _0x570248===_0x37a862(0x1b6)&&_0x570248!==null&&!Array['isArray'](_0x570248))return Object[_0x37a862(0x196)](_0x570248)[_0x37a862(0x1a4)](([_0xc0e7aa,_0x1c8ee2])=>{const _0x5204ca=_0x37a862;switch(_0xc0e7aa){case _0x5204ca(0x17e):return _0x4e5a6b===_0x1c8ee2;case'$ne':return _0x4e5a6b!==_0x1c8ee2;case _0x5204ca(0x1f2):return _0x4e5a6b>_0x1c8ee2;case _0x5204ca(0x179):return _0x4e5a6b>=_0x1c8ee2;case _0x5204ca(0x12f):return _0x4e5a6b<_0x1c8ee2;case _0x5204ca(0x140):return _0x4e5a6b<=_0x1c8ee2;case'$in':return Array[_0x5204ca(0x167)](_0x1c8ee2)&&_0x1c8ee2['includes'](_0x4e5a6b);case _0x5204ca(0x1c7):return Array[_0x5204ca(0x167)](_0x1c8ee2)&&!_0x1c8ee2[_0x5204ca(0x141)](_0x4e5a6b);default:return![];}});return _0x4e5a6b===_0x570248;});}[_0x412d09(0x1f1)](){const _0x2de973=_0x412d09;return this[_0x2de973(0x1ac)][_0x2de973(0x137)](this['btree']['root']);}['generateUniqueId'](){const _0xcc66c4=_0x412d09;if(this['config']['encode']==='bson'&&this[_0xcc66c4(0x1ee)][_0xcc66c4(0x165)])return new ObjectId();const _0x378f87=Date[_0xcc66c4(0x184)]()[_0xcc66c4(0x18e)](0x24),_0xbeccf3=Math[_0xcc66c4(0x18b)]()['toString'](0x24)[_0xcc66c4(0x129)](0x2,0xa);return _0x378f87+'_'+_0xbeccf3;}[_0x412d09(0x1ca)](_0x30e4dc,_0x474be6){const _0x5c0dba=_0x412d09;if(!_0x30e4dc)return{'err':_0x5c0dba(0x1dc)};if(!_0x474be6)return{'err':'Data\x20required'};if(_0x30e4dc['includes']('/')||_0x30e4dc[_0x5c0dba(0x141)]('\x5c'))return{'err':_0x5c0dba(0x175)};if(!Buffer[_0x5c0dba(0x181)](_0x474be6))return{'err':_0x5c0dba(0x19e)};!fs['existsSync'](this[_0x5c0dba(0x1ee)][_0x5c0dba(0x18d)]+_0x5c0dba(0x1c8))&&fs['mkdirSync'](this[_0x5c0dba(0x1ee)][_0x5c0dba(0x18d)]+'/files',{'recursive':!![]});const _0x32199d=this[_0x5c0dba(0x1ee)][_0x5c0dba(0x18d)]+_0x5c0dba(0x119)+_0x30e4dc;try{return fs['writeFileSync'](_0x32199d,_0x474be6),{'success':!![]};}catch(_0x2af307){return{'err':'Failed\x20to\x20write\x20file:\x20'+_0x2af307[_0x5c0dba(0x15d)]};}}[_0x412d09(0x174)](){const _0x916875=_0x412d09;if(!fs['existsSync'](this[_0x916875(0x1ee)][_0x916875(0x18d)]+_0x916875(0x1c8)))return[];const _0xfd4c0=fs[_0x916875(0x1c4)](this[_0x916875(0x1ee)][_0x916875(0x18d)]+_0x916875(0x1c8));return _0xfd4c0;}[_0x412d09(0x12b)](_0x441221){const _0xefe8ab=_0x412d09;if(!_0x441221)return{'err':_0xefe8ab(0x1dc)};if(!fs[_0xefe8ab(0x113)](this[_0xefe8ab(0x1ee)][_0xefe8ab(0x18d)]+'/files'))return{'err':_0xefe8ab(0x1c1),'code':0x194};const _0x3fe43a=this[_0xefe8ab(0x1ee)][_0xefe8ab(0x18d)]+_0xefe8ab(0x119)+_0x441221;if(!fs[_0xefe8ab(0x113)](_0x3fe43a))return{'err':_0xefe8ab(0x1e2),'code':0x194};try{const _0x3715ca=fs[_0xefe8ab(0x1b5)](_0x3fe43a);return{'success':!![],'data':_0x3715ca};}catch(_0x1e833c){return{'err':'Failed\x20to\x20read\x20file:\x20'+_0x1e833c[_0xefe8ab(0x15d)]};}}async[_0x412d09(0x1ab)](_0x2c6053,_0x2311a={'returnBase64':!![],'quality':0x1,'pixels':0x0,'blackAndWhite':![],'mirror':![],'upToDown':![],'invert':![],'brightness':0x1,'contrast':0x1,'maxWidth':null,'maxHeight':null}){const _0x3b6c29=_0x412d09;if(!_0x2c6053)return{'err':_0x3b6c29(0x1dc)};if(_0x2c6053[_0x3b6c29(0x141)]('/')||_0x2c6053[_0x3b6c29(0x141)]('\x5c'))return{'err':_0x3b6c29(0x175)};if(!fs[_0x3b6c29(0x113)](this[_0x3b6c29(0x1ee)][_0x3b6c29(0x18d)]+_0x3b6c29(0x1c8)))return{'err':_0x3b6c29(0x164),'code':0x194};const _0x26776e=this[_0x3b6c29(0x1ee)][_0x3b6c29(0x18d)]+_0x3b6c29(0x119)+_0x2c6053;if(!fs[_0x3b6c29(0x113)](_0x26776e))return{'err':_0x3b6c29(0x1e2),'code':0x194};const _0x51b0bd=[_0x3b6c29(0x17a),'.jpg','.jpeg',_0x3b6c29(0x13d),'.bmp','.webp','.tiff',_0x3b6c29(0x166),_0x3b6c29(0x13f),'.heic',_0x3b6c29(0x11b),_0x3b6c29(0x116)],_0x1dcd8b=path[_0x3b6c29(0x1d7)](_0x2c6053)[_0x3b6c29(0x182)]();if(!_0x51b0bd[_0x3b6c29(0x141)](_0x1dcd8b))return{'err':_0x3b6c29(0x14f)};try{const _0x506454=fs['readFileSync'](_0x26776e),_0x2d00ec={'returnBase64':_0x2311a[_0x3b6c29(0x14a)]!==![],'quality':Math['max'](0.1,Math['min'](0x1,_0x2311a[_0x3b6c29(0x15c)]||0x1)),'pixels':Math[_0x3b6c29(0x1d1)](0x0,_0x2311a[_0x3b6c29(0x118)]||0x0),'blackAndWhite':Boolean(_0x2311a[_0x3b6c29(0x170)]),'mirror':Boolean(_0x2311a[_0x3b6c29(0x1ba)]),'upToDown':Boolean(_0x2311a[_0x3b6c29(0x1dd)]),'invert':Boolean(_0x2311a[_0x3b6c29(0x134)]),'brightness':Math['max'](0.1,Math[_0x3b6c29(0x1c6)](0x5,_0x2311a['brightness']||0x1)),'contrast':Math[_0x3b6c29(0x1d1)](0.1,Math[_0x3b6c29(0x1c6)](0x5,_0x2311a[_0x3b6c29(0x18a)]||0x1)),'maxWidth':_0x2311a[_0x3b6c29(0x11e)]>0x0?Math[_0x3b6c29(0x143)](_0x2311a[_0x3b6c29(0x11e)]):null,'maxHeight':_0x2311a['maxHeight']>0x0?Math[_0x3b6c29(0x143)](_0x2311a[_0x3b6c29(0x1f7)]):null},_0xd7a3bb=await imageProcess(_0x506454,_0x1dcd8b,_0x2d00ec),_0x274f5c=fs[_0x3b6c29(0x123)](_0x26776e);return{'success':!![],'data':_0xd7a3bb,'metadata':{'filename':_0x2c6053,'extension':_0x1dcd8b,'originalSize':_0x274f5c[_0x3b6c29(0x183)],'processingApplied':{'resized':_0x2d00ec[_0x3b6c29(0x118)]>0x0,'qualityReduced':_0x2d00ec[_0x3b6c29(0x15c)]<0x1,'blackAndWhite':_0x2d00ec['blackAndWhite'],'mirrored':_0x2d00ec[_0x3b6c29(0x1ba)],'flippedVertical':_0x2d00ec['upToDown'],'inverted':_0x2d00ec[_0x3b6c29(0x134)],'brightnessAdjusted':_0x2d00ec[_0x3b6c29(0x1e6)]!==0x1,'contrastAdjusted':_0x2d00ec[_0x3b6c29(0x18a)]!==0x1}}};}catch(_0x3553cb){return console[_0x3b6c29(0x19c)](_0x3b6c29(0x1ea),_0x3553cb),{'err':_0x3b6c29(0x16f)+_0x3553cb['message'],'code':_0x3b6c29(0x1e5)};}}[_0x412d09(0x155)](_0x3f74ff){const _0x195a06=_0x412d09;if(!_0x3f74ff)return{'err':'File\x20name\x20required'};if(!fs[_0x195a06(0x113)](this[_0x195a06(0x1ee)][_0x195a06(0x18d)]+_0x195a06(0x1c8)))return{'err':_0x195a06(0x1c1),'code':0x194};const _0x35858c=this[_0x195a06(0x1ee)]['directory']+'/files/'+_0x3f74ff;if(!fs[_0x195a06(0x113)](_0x35858c))return{'err':_0x195a06(0x1e2),'code':0x194};try{return fs[_0x195a06(0x1a7)](_0x35858c),{'success':!![]};}catch(_0x2a38fb){return{'err':_0x195a06(0x1a9)+_0x2a38fb[_0x195a06(0x15d)]};}}}module[_0x412d09(0x14d)]=eveloDB;
+const fs = require('fs');
+const { encrypt, decrypt, generateKey } = require('./encryption');
+const { BSON, ObjectId } = require('bson');
+const { GoogleGenAI } = require("@google/genai");
+const imageProcess = require('./imageProcess');
+const path = require('path');
+
+/**
+ * @typedef {Object} EveloDBConfig
+ * @property {string} [directory='./evelodatabase'] - Directory to store collections.
+ * @property {string} [extension='json'] - File extension to use.
+ * @property {number} [tabspace=3] - Number of spaces for JSON formatting.
+ * @property {'json'|'bson'} [encode='json'] - Encoding type.
+ * @property {string|null} [encryption=null] - Encryption algorithm if any.
+ * @property {string|null} [encryptionKey=null] - Encryption key in hex.
+ * @property {boolean} [noRepeat=false] - Prevent duplicate records.
+ * @property {boolean|string} [autoPrimaryKey=true] - Enable or name auto-generated primary key.
+ * @property {boolean} [objectId=false] - Use BSON ObjectId for IDs if encoding is BSON.
+ */
+
+/**
+ * @class BTreeNode
+ * @classdesc Node used internally by BTree.
+ * @property {Array<[any, any]>} keys - Stored keys and their values.
+ * @property {Array<BTreeNode>} children - Child nodes.
+ * @property {boolean} isLeaf - Whether node is leaf.
+ */
+
+/**
+ * @class BTree
+ * @classdesc Simple B-Tree for indexing token-based values.
+ * @param {number} order - Maximum number of keys per node.
+ */
+
+/**
+ * @class QueryResult
+ * @classdesc Encapsulates results returned from find/search operations.
+ * @param {Array} data - Array of items.
+ * @method getList(offset, limit) - Returns a slice of data.
+ * @method count() - Returns number of items.
+ * @method sort(compareFn) - Returns sorted QueryResult.
+ * @method all() - Returns all items.
+ */
+
+/**
+ * @class eveloDB
+ * @classdesc Main database class for EveloDB.
+ * @param {EveloDBConfig} [config={}] - Configuration options.
+ */
+
+/**
+ * @function deepCompare
+ * @description Recursively compares two objects or arrays for equality.
+ * @param {any} obj1
+ * @param {any} obj2
+ * @returns {boolean}
+ */
+
+/**
+ * @function encrypt
+ * @param {any} data
+ * @param {string} algorithm
+ * @param {string} key
+ * @returns {string|Buffer}
+ */
+
+/**
+ * @function decrypt
+ * @param {any} data
+ * @param {string} algorithm
+ * @param {string} key
+ * @returns {any}
+ */
+
+/**
+ * @typedef {Object} ReadImageConfig
+ * @property {boolean} [returnBase64=true] - Return base64 string.
+ * @property {number} [quality=1] - Image quality from 0.1 to 1.
+ * @property {number} [pixels=0] - Resize pixels (0 to keep original size).
+ * @property {boolean} [blackAndWhite=false] - Convert to grayscale.
+ * @property {boolean} [mirror=false] - Mirror image horizontally.
+ * @property {boolean} [upToDown=false] - Flip image vertically.
+ * @property {boolean} [invert=false] - Invert colors.
+ * @property {number} [brightness=1] - Brightness multiplier.
+ * @property {number} [contrast=1] - Contrast multiplier.
+ * @property {number|null} [maxWidth=null] - Max width in pixels.
+ * @property {number|null} [maxHeight=null] - Max height in pixels.
+ */
+
+/**
+ * @typedef {Object} AnalyseResponse
+ * @property {Array<number>} indexes - Matching indexes in data array.
+ * @property {string} reason - Reasoning for selection.
+ * @property {string} message - Additional insight message.
+ * @property {Array<any>} data - Actual items from data array.
+ */
+
+// Default configuration
+const defaultConfig = {
+    directory: './evelodatabase',
+    extension: 'json',
+    tabspace: 3,
+    encode: 'json', // json, bson
+    encryption: null,
+    encryptionKey: null,
+    noRepeat: false,
+    autoPrimaryKey: true,
+    objectId: false
+}
+
+// Deep comparison function
+function deepCompare(obj1, obj2) {
+    if (typeof obj1 === 'object' && typeof obj2 === 'object') {
+        if (Array.isArray(obj1)) {
+            if (!Array.isArray(obj2)) return false;
+            if (obj1.length !== obj2.length) return false;
+            for (let i = 0; i < obj1.length; i++) {
+                if (!deepCompare(obj1[i], obj2[i])) return false;
+            }
+            return true;
+        } else {
+            const keys1 = Object.keys(obj1);
+            const keys2 = Object.keys(obj2);
+            if (keys1.length !== keys2.length) return false;
+            for (let key of keys1) {
+                if (!deepCompare(obj1[key], obj2[key])) return false;
+            }
+            return true;
+        }
+    } else {
+        return obj1 === obj2;
+    }
+}
+
+// B-Tree Node class
+class BTreeNode {
+    constructor(isLeaf) {
+        this.keys = [];
+        this.children = [];
+        this.isLeaf = isLeaf;
+    }
+}
+
+// B-Tree class
+class BTree {
+    constructor(order) {
+        this.order = order;
+        this.root = new BTreeNode(true);
+    }
+
+    insert(key, value) {
+        let root = this.root;
+        if (root.keys.length === this.order - 1) {
+            let newRoot = new BTreeNode(false);
+            newRoot.children.push(root);
+            this.splitChild(newRoot, 0);
+            this.root = newRoot;
+        }
+        this.insertNonFull(this.root, [key, value]);
+    }
+
+    insertNonFull(node, keyValue) {
+        let i = node.keys.length - 1;
+        if (node.isLeaf) {
+            node.keys.push(null);
+            while (i >= 0 && keyValue[0] < node.keys[i][0]) {
+                node.keys[i + 1] = node.keys[i];
+                i--;
+            }
+            node.keys[i + 1] = keyValue;
+        } else {
+            while (i >= 0 && keyValue[0] < node.keys[i][0]) {
+                i--;
+            }
+            i++;
+            if (node.children[i].keys.length === this.order - 1) {
+                this.splitChild(node, i);
+                if (keyValue[0] > node.keys[i][0]) {
+                    i++;
+                }
+            }
+            this.insertNonFull(node.children[i], keyValue);
+        }
+    }
+
+    splitChild(node, i) {
+        let order = this.order;
+        let child = node.children[i];
+        let newNode = new BTreeNode(child.isLeaf);
+        node.keys.splice(i, 0, child.keys[Math.floor(order / 2)]);
+        node.children.splice(i + 1, 0, newNode);
+        newNode.keys = child.keys.splice(Math.floor(order / 2) + 1);
+        if (!child.isLeaf) {
+            newNode.children = child.children.splice(Math.floor(order / 2) + 1);
+        }
+    }
+
+    traverse(node) {
+        let result = [];
+        for (let i = 0; i < node.keys.length; i++) {
+            if (!node.isLeaf) {
+                result = result.concat(this.traverse(node.children[i]));
+            }
+            result.push(node.keys[i][1]);
+        }
+        if (!node.isLeaf && node.children.length > node.keys.length) {
+            result = result.concat(this.traverse(node.children[node.keys.length]));
+        }
+        return result;
+    }
+}
+
+class QueryResult {
+    constructor(data) {
+        this.data = Array.isArray(data) ? data : []
+    }
+
+    /**
+     * @param {number} offset - Starting index.
+     * @param {number} limit - Number of items to return.
+     */
+    getList(offset = 0, limit = 10) {
+        return this.data.slice(offset, offset + limit);
+    }
+
+    count() {
+        return this.data.length;
+    }
+
+    /**
+     * @param {function} compareFn - Comparison function.
+     * @returns {QueryResult}
+     */
+    sort(compareFn) {
+        return new QueryResult([...this.data].sort(compareFn));
+    }
+
+    all() {
+        return this.data;
+    }
+}
+
+// eveloDB class
+
+/**
+ * @class eveloDB
+ */
+class eveloDB {
+    constructor(config = {}) {
+        this.config = { ...defaultConfig, ...config };
+
+        if (this.config.encode === 'bson' && this.config.encryption && this.config.encryptionKey) {
+            throw new Error('BSON encoding does not support encryption. Please set "encryption" and "encryptionKey" to null or use "json" encoding.');
+        }
+
+        if (this.config.encode === 'bson') {
+            if (!config.extension) {
+                this.config.extension = 'bson'; // Default extension for BSON
+            }
+            this.config.tabspace = 0; // BSON does not use tabspace
+            this.config.encryption = null; // BSON does not support encryption
+            this.config.encryptionKey = null; // BSON does not support encryption
+        }
+
+        // Validate encryption config
+        if (this.config.encryption) {
+            const key = this.config.encryptionKey;
+            const algorithm = this.config.encryption;
+
+            if (!key) {
+                throw new Error('Encryption key required when encryption is enabled');
+            }
+
+            const keyLengths = {
+                'aes-128-cbc': 32, // 16 bytes = 32 hex characters
+                'aes-192-cbc': 48, // 24 bytes = 48 hex characters
+                'aes-256-cbc': 64, // 32 bytes = 64 hex characters
+                'aes-128-gcm': 32, // 16 bytes = 32 hex characters
+                'aes-256-gcm': 64, // 32 bytes = 64 hex characters
+            }
+
+            const expectedLength = keyLengths[algorithm];
+
+            if (!expectedLength) {
+                throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+            }
+
+            if (key.length !== expectedLength) {
+                throw new Error(`${algorithm.toUpperCase()} requires a ${expectedLength}-character hex key (${expectedLength / 2} bytes)`);
+            }
+        }
+
+        this.btree = new BTree(3);
+        if (!fs.existsSync(this.config.directory)) {
+            fs.mkdirSync(this.config.directory, { recursive: true });
+        }
+    }
+
+    // Encryption/decryption methods
+    encrypt(data) {
+        if (this.config.encode === 'bson') {
+            return data
+        }
+        return encrypt(
+            data,
+            this.config.encryption,
+            this.config.encryptionKey
+        );
+    }
+
+    decrypt(data) {
+        if (this.config.encode === 'bson') {
+            return data
+        }
+        return decrypt(
+            data,
+            this.config.encryption,
+            this.config.encryptionKey
+        );
+    }
+
+    encodeData(data) {
+        if (this.config.encode === 'bson') {
+            try {
+                const obj = { db: data };
+                return BSON.serialize(obj);
+            } catch (error) {
+                if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
+                    // Fallback to JSON for very large objects that exceed BSON buffer limits
+                    console.warn('BSON serialization failed, falling back to JSON for large object');
+                    return JSON.stringify(data, null, this.config.tabspace);
+                }
+                throw error;
+            }
+        }
+        if (this.config.encode === 'json') {
+            return JSON.stringify(data, null, this.config.tabspace);
+        }
+        return JSON.stringify(data, null, this.config.tabspace);
+    }
+
+    decodeData(data) {
+        if (this.config.encode === 'bson') {
+            try {
+                const { db } = BSON.deserialize(data);
+                return db;
+            } catch (error) {
+                // If BSON deserialization fails, try JSON (for fallback cases)
+                try {
+                    return JSON.parse(data.toString('utf8'));
+                } catch (jsonError) {
+                    throw new Error(`Failed to decode data: ${error.message}, ${jsonError.message}`);
+                }
+            }
+        }
+        if (this.config.encode === 'json') {
+            return JSON.parse(data.toString('utf8'));
+        }
+        return JSON.parse(data.toString('utf8'));
+    }
+
+    // More accurate size estimation that handles BSON limitations
+    getSafeBsonSize(data) {
+        if (this.config.encode !== 'bson') {
+            return Buffer.from(JSON.stringify(data)).length;
+        }
+
+        try {
+            const obj = { db: data };
+            return BSON.serialize(obj).length;
+        } catch (error) {
+            if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
+                // If BSON serialization fails, use JSON size as fallback
+                return Buffer.from(JSON.stringify(data)).length;
+            }
+            throw error;
+        }
+    }
+
+    // Helper to split file path into name and extension
+    splitFilePath(filePath) {
+        const lastDotIndex = filePath.lastIndexOf('.');
+        if (lastDotIndex === -1) {
+            return { name: filePath, extension: '' };
+        }
+        return {
+            name: filePath.substring(0, lastDotIndex),
+            extension: filePath.substring(lastDotIndex)
+        };
+    }
+
+    // Helper to generate chunk file names
+    getChunkFileName(baseFilePath, chunkIndex) {
+        const { name, extension } = this.splitFilePath(baseFilePath);
+        if (chunkIndex === 0) {
+            return baseFilePath; // Main file
+        }
+        return `${name} ${chunkIndex}${extension}`;
+    }
+
+    writeFileData(filePath, data) {
+        // If not BSON or data is not an array, use normal storage
+        if (this.config.encode !== 'bson' || !Array.isArray(data)) {
+            const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
+            fs.writeFileSync(filePath, encodedData);
+
+            // Clean up any existing chunk files
+            this.cleanupChunkFiles(filePath);
+            return true;
+        }
+
+        // If data is not an array, use normal storage
+        if (!Array.isArray(data)) {
+            const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
+            fs.writeFileSync(filePath, encodedData);
+            this.cleanupChunkFiles(filePath);
+            return true;
+        }
+
+        const MAX_SIZE = 10000000; // Reduced to 10MB for safety margin
+
+        // Check if array needs splitting
+        const totalSize = this.getSafeBsonSize(data);
+
+        if (totalSize <= MAX_SIZE) {
+            try {
+                // Try to store as single file
+                const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
+                fs.writeFileSync(filePath, encodedData);
+                this.cleanupChunkFiles(filePath);
+                return true;
+            } catch (error) {
+                if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
+                    // If single file fails due to size, proceed with chunking
+                    console.warn('Single file storage failed, proceeding with chunking');
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        // Split array into smaller, safer chunks
+        const chunks = [];
+        let currentChunk = [];
+        let currentSize = 0;
+
+        for (const item of data) {
+            const itemSize = this.getSafeBsonSize([item]);
+
+            // Safety check: if a single item is too large, handle it separately
+            if (itemSize > MAX_SIZE) {
+                console.warn(`Single item exceeds maximum size (${itemSize} > ${MAX_SIZE}), storing separately`);
+                if (currentChunk.length > 0) {
+                    chunks.push([...currentChunk]);
+                    currentChunk = [];
+                    currentSize = 0;
+                }
+                chunks.push([item]); // Store oversized item in its own chunk
+                continue;
+            }
+
+            if (currentSize + itemSize > MAX_SIZE && currentChunk.length > 0) {
+                chunks.push([...currentChunk]);
+                currentChunk = [item];
+                currentSize = itemSize;
+            } else {
+                currentChunk.push(item);
+                currentSize += itemSize;
+            }
+        }
+
+        if (currentChunk.length > 0) {
+            chunks.push(currentChunk);
+        }
+
+        console.log(`Splitting data into ${chunks.length} chunks`);
+
+        // Store each chunk in separate files
+        for (let i = 0; i < chunks.length; i++) {
+            const chunkFilePath = this.getChunkFileName(filePath, i);
+            try {
+                const encodedData = this.config.encryption ?
+                    this.encrypt(chunks[i]) :
+                    this.encodeData(chunks[i]);
+                fs.writeFileSync(chunkFilePath, encodedData);
+            } catch (error) {
+                console.error(`Failed to write chunk ${i}:`, error);
+                // Try with even smaller chunk or fallback to JSON
+                if (chunks[i].length > 1) {
+                    console.warn('Retrying with smaller chunk size');
+                    this.writeFileData(chunkFilePath, chunks[i]); // Recursively handle
+                } else {
+                    throw new Error(`Failed to store oversized item: ${error.message}`);
+                }
+            }
+        }
+
+        this.cleanupChunkFiles(filePath, chunks.length);
+        return true;
+    }
+
+    // Helper to clean up leftover chunk files
+    cleanupChunkFiles(baseFilePath, currentChunkCount = 1) {
+        let chunkIndex = currentChunkCount;
+
+        while (true) {
+            const chunkFilePath = this.getChunkFileName(baseFilePath, chunkIndex);
+            if (fs.existsSync(chunkFilePath)) {
+                try {
+                    fs.unlinkSync(chunkFilePath);
+                    console.log(`Cleaned up leftover chunk: ${chunkFilePath}`);
+                } catch (error) {
+                    console.warn(`Failed to remove chunk file ${chunkFilePath}:`, error);
+                }
+                chunkIndex++;
+            } else {
+                break;
+            }
+        }
+    }
+
+    readFileData(filePath) {
+        // Check if main file exists
+        if (!fs.existsSync(filePath)) {
+            return null;
+        }
+
+        // Read main file (chunk 0)
+        let mainData;
+        try {
+            mainData = this.config.encode === 'bson' ?
+                fs.readFileSync(filePath) :
+                fs.readFileSync(filePath, 'utf8');
+        } catch (error) {
+            console.error(`Failed to read main file ${filePath}:`, error);
+            return null;
+        }
+
+        let result;
+        try {
+            result = this.config.encryption ?
+                this.decrypt(mainData) :
+                this.decodeData(mainData);
+        } catch (error) {
+            console.error(`Failed to decode main file ${filePath}:`, error);
+            return null;
+        }
+
+        // If result is not an array, return as is (no chunking needed)
+        if (!Array.isArray(result)) {
+            return result;
+        }
+
+        // Check for chunk files and combine them
+        const combinedData = [...result];
+        let chunkIndex = 1;
+
+        while (true) {
+            const chunkFilePath = this.getChunkFileName(filePath, chunkIndex);
+            if (!fs.existsSync(chunkFilePath)) {
+                break;
+            }
+
+            try {
+                const chunkData = this.config.encode === 'bson' ?
+                    fs.readFileSync(chunkFilePath) :
+                    fs.readFileSync(chunkFilePath, 'utf8');
+
+                const decodedChunk = this.config.encryption ?
+                    this.decrypt(chunkData) :
+                    this.decodeData(chunkData);
+
+                if (Array.isArray(decodedChunk)) {
+                    combinedData.push(...decodedChunk);
+                }
+                chunkIndex++;
+            } catch (error) {
+                console.warn(`Error reading chunk file ${chunkFilePath}:`, error);
+                break;
+            }
+        }
+
+        return combinedData;
+    }
+
+    // Additional helper to handle very large individual items
+    getFileChunkInfo(filePath) {
+        if (!fs.existsSync(filePath)) {
+            return null;
+        }
+
+        const info = {
+            isChunked: false,
+            chunkCount: 1,
+            totalSize: 0,
+            chunkFiles: [filePath],
+            hasOversizedItems: false
+        };
+
+        // Check main file
+        try {
+            const mainStats = fs.statSync(filePath);
+            info.totalSize = mainStats.size;
+
+            // Check if main file contains JSON fallback data
+            if (this.config.encode === 'bson') {
+                const data = fs.readFileSync(filePath);
+                try {
+                    BSON.deserialize(data);
+                } catch (error) {
+                    info.usesJsonFallback = true;
+                }
+            }
+        } catch (error) {
+            console.warn(`Error getting stats for ${filePath}:`, error);
+        }
+
+        // Check for chunk files
+        let chunkIndex = 1;
+        while (true) {
+            const chunkFilePath = this.getChunkFileName(filePath, chunkIndex);
+            if (fs.existsSync(chunkFilePath)) {
+                info.isChunked = true;
+                info.chunkCount++;
+                info.chunkFiles.push(chunkFilePath);
+
+                try {
+                    const chunkStats = fs.statSync(chunkFilePath);
+                    info.totalSize += chunkStats.size;
+
+                    // Check for oversized single items
+                    if (chunkStats.size > 10000000) { // 10MB
+                        info.hasOversizedItems = true;
+                    }
+                } catch (error) {
+                    console.warn(`Error getting stats for ${chunkFilePath}:`, error);
+                }
+
+                chunkIndex++;
+            } else {
+                break;
+            }
+        }
+
+        return info;
+    }
+
+    /**
+     * @param {number} length
+     * @returns 
+     */
+    generateKey(length) {
+        return generateKey(length);
+    }
+
+    // Helper method to get file path
+    getFilePath(collection) {
+        return `${this.config.directory}/${collection}.${this.config.extension}`;
+    }
+
+    // Database operations
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} data 
+     * @returns 
+     */
+    create(collection, data) {
+        // Validate required parameters
+        if (!collection) return { err: 'Collection name required' };
+        if (collection.includes('/') || collection.includes('\\') || collection.includes('.') || collection.includes(' ')) {
+            return { err: 'Invalid collection name. Avoid special characters and spaces.' };
+        }
+        if (!data || typeof data !== 'object') return { err: 'Valid data object required' };
+
+        const fullPath = this.getFilePath(collection);
+        let db = [];
+
+        // Load existing data if file exists
+        if (fs.existsSync(fullPath)) {
+            db = this.readFileData(fullPath)
+
+            // Early noRepeat check before modifying data
+            if (this.config.noRepeat) {
+                const isDuplicate = db.some(existingItem => {
+                    // Compare only user-provided fields
+                    return Object.keys(data).every(key => {
+                        // Skip comparison if this is an auto-generated field
+                        if (key === '__id') return true;
+                        return deepCompare(existingItem[key], data[key]);
+                    }) &&
+                        // Also ensure we're not matching against records missing compared fields
+                        Object.keys(data).every(key => key in existingItem);
+                });
+
+                if (isDuplicate) {
+                    return {
+                        err: 'Duplicate data - record already exists (noRepeat enabled)',
+                        code: 'DUPLICATE_DATA'
+                    };
+                }
+            }
+        }
+
+        // Prepare the new object (after passing noRepeat check)
+        const object = { ...data };
+
+        // Generate a unique ID for the new object
+        let autoPrimaryKeyName;
+        if (this.config.autoPrimaryKey) {
+            autoPrimaryKeyName = (typeof this.config.autoPrimaryKey === 'string' && this.config.autoPrimaryKey.length > 0)
+                ? this.config.autoPrimaryKey
+                : '_id'; // Default key name
+
+            // Only add if the key doesn't already exist in the document
+            if (!object.hasOwnProperty(autoPrimaryKeyName)) {
+                object[autoPrimaryKeyName] = this.generateUniqueId();
+            }
+        }
+
+        // Add to database
+        db.push(object);
+
+        // Write to file
+        this.writeFileData(fullPath, db)
+
+        // Index in B-Tree if token exists
+        if (object.token) {
+            this.btree.insert(object.token, object);
+        }
+
+        return {
+            success: true,
+            ...(autoPrimaryKeyName && object[autoPrimaryKeyName] ? {
+                [autoPrimaryKeyName]: object[autoPrimaryKeyName]
+            } : {})
+        }
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} conditions 
+     * @returns 
+     */
+    delete(collection, conditions) {
+        if (!collection) return { err: 'collection required!' };
+        if (!conditions) return { err: 'conditions required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return { err: 404 };
+
+        let db = this.readFileData(fullPath);
+
+        const originalLength = db.length;
+
+        // Filter out matching items
+        const filteredData = db.filter(item => !this.matchesConditions(item, conditions));
+
+        const deletedCount = originalLength - filteredData.length;
+
+        this.writeFileData(fullPath, filteredData);
+
+        return {
+            success: true,
+            deletedCount
+        };
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {any} data 
+     * @returns 
+     */
+    inject(collection, data) {
+        if (!collection) return { err: 'collection required!' };
+        if (!data) return { err: 'data required!' };
+
+        const fullPath = this.getFilePath(collection);
+        this.writeFileData(fullPath, data)
+        return { success: true };
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {any} data 
+     * @returns 
+     */
+    writeData(collection, data) {
+        if (!collection) return { err: 'collection required!' };
+        if (collection.includes('/') || collection.includes('\\') || collection.includes('.') || collection.includes(' ')) {
+            return { err: 'Invalid collection name. Avoid special characters and spaces.' };
+        }
+        if (!data) return { err: 'data required!' };
+
+        const fullPath = this.getFilePath(collection);
+        this.writeFileData(fullPath, data)
+        return { success: true };
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} conditions 
+     * @returns 
+     */
+    find(collection, conditions) {
+        if (!collection) return { err: 'collection required!' };
+        if (!conditions) return { err: 'conditions required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return new QueryResult([]);
+
+        const db = this.readFileData(fullPath);
+        const results = db.filter(item => this.matchesConditions(item, conditions));
+
+        return new QueryResult(results);
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} conditions 
+     * @returns 
+     */
+    findOne(collection, conditions) {
+        if (!collection) return { err: 'collection required!' };
+        if (!conditions) return { err: 'conditions required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return null;
+
+        const db = this.readFileData(fullPath);
+
+        return db.find(item => this.matchesConditions(item, conditions)) || null;
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} conditions 
+     * @returns 
+     */
+    search(collection, conditions) {
+        if (!collection) return { err: 'collection required!' };
+        if (!conditions) return { err: 'conditions required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return new QueryResult([]);
+
+        const db = this.readFileData(fullPath);
+        const results = db.filter(item => {
+            return Object.entries(conditions).every(([key, value]) => {
+                const field = item[key];
+
+                if (field === undefined || field === null) return false;
+
+                // If value is a regex object
+                if (value && typeof value === 'object' && value.$regex) {
+                    const pattern = value.$regex;
+                    const flags = value.$options || 'i';
+                    const regex = new RegExp(pattern, flags);
+                    return regex.test(field.toString());
+                }
+
+                // Simple substring match (like search)
+                return field.toString().toLowerCase().includes(value.toString().toLowerCase());
+            });
+        });
+
+        return new QueryResult(results);
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @returns 
+     */
+    get(collection) {
+        if (!collection) return { err: 'collection required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return new QueryResult(undefined);
+
+        const data = this.readFileData(fullPath);
+
+        return new QueryResult(data);
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @returns 
+     */
+    readData(collection) {
+        if (!collection) return { err: 'collection required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return undefined;
+
+        const data = this.readFileData(fullPath);
+
+        return data;
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @returns 
+     */
+    count(collection) {
+        // 1. First check if collection exists (same as get())
+        if (!collection) return { success: false, err: 'collection required!' };
+
+        // 2. Get the data
+        const result = this.get(collection).all()
+
+        // 3. Handle potential errors from get()
+        if (!result) {
+            return {
+                success: false,
+                err: 'Collection not found'
+            }
+        }
+
+        // 4. Validate we got an array
+        if (!Array.isArray(result)) {
+            return {
+                success: false,
+                err: 'Invalid collection data format'
+            }
+        }
+
+        // 5. Return success with count
+        return {
+            success: true,
+            count: result.length
+        }
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} data 
+     * @returns 
+     */
+    check(collection, data) {
+        if (!collection) return { err: 'collection required!' };
+        if (!data) return { err: 'conditions required!' };
+
+        return this.find(collection, data).all().length > 0;
+    }
+
+
+    /**
+     * 
+     * @param {string} collection 
+     * @param {object} conditions
+     * @param {object} newData
+     * @returns 
+     */
+    edit(collection, conditions, newData) {
+        if (!collection) return { err: 'Collection name required' };
+        if (!conditions) return { err: 'Conditions required' };
+        if (!newData) return { err: 'New data required' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
+
+        let db = this.readFileData(fullPath);
+        let editedCount = 0;
+        let duplicateFound = false;
+
+        const updatedDb = db.map(item => {
+            if (this.matchesConditions(item, conditions)) {
+                const updatedItem = { ...item, ...newData };
+
+                if (this.config.noRepeat) {
+                    const isDuplicate = db.some(existingItem => {
+                        if (existingItem.__id && item.__id && existingItem.__id === item.__id) {
+                            return false;
+                        }
+
+                        return Object.keys(newData).every(key => {
+                            if (key === '__id') return false;
+                            return deepCompare(existingItem[key], updatedItem[key]);
+                        });
+                    });
+
+                    if (isDuplicate) {
+                        duplicateFound = true;
+                        return item;
+                    }
+                }
+
+                editedCount++;
+                return updatedItem;
+            }
+
+            return item;
+        });
+
+        if (duplicateFound) {
+            return {
+                err: 'Edit would create duplicate data (noRepeat enabled)',
+                code: 'DUPLICATE_DATA'
+            };
+        }
+
+        if (editedCount === 0) {
+            return { err: 'No matching records found', code: 'NO_MATCH' };
+        }
+
+        this.writeFileData(fullPath, updatedDb);
+        return {
+            success: true,
+            modifiedCount: editedCount
+        };
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @returns 
+     */
+    drop(collection) {
+        if (!collection) return { err: 'collection required!' };
+
+        const fullPath = this.getFilePath(collection);
+
+        // For BSON encoding, delete all chunk files as well
+        if (this.config.encode === 'bson') {
+            let deletedCount = 0;
+            let chunkIndex = 0;
+
+            // Delete all chunk files (main file + chunks)
+            while (true) {
+                const chunkFilePath = this.getChunkFileName(fullPath, chunkIndex);
+
+                if (fs.existsSync(chunkFilePath)) {
+                    try {
+                        fs.unlinkSync(chunkFilePath);
+                        deletedCount++;
+                        console.log(`Deleted chunk file: ${chunkFilePath}`);
+                    } catch (error) {
+                        console.warn(`Failed to delete chunk file ${chunkFilePath}:`, error);
+                    }
+                    chunkIndex++;
+                } else {
+                    break;
+                }
+            }
+
+            if (deletedCount > 0) {
+                return {
+                    success: true,
+                    deletedCount: deletedCount,
+                    message: `Deleted ${deletedCount} files including chunks`
+                };
+            } else {
+                return { err: 'No files found to delete', code: 404 };
+            }
+        }
+        else {
+            // For non-BSON, just delete the main file
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                return { success: true };
+            } else {
+                return { err: 404 };
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {string} collection 
+     * @returns 
+     */
+    reset(collection) {
+        return this.drop(collection)
+    }
+
+    /**
+     * 
+     * @param {object} param0 
+     * @returns 
+     */
+    changeConfig({ from, to, collections }) {
+
+        if (this.config.encode !== 'json' && (from.encryption || from.encryptionKey || to.encryption || to.encryptionKey)) {
+            throw new Error('Cannot change encryption settings while encoding is not JSON');
+        }
+
+        const path = require('path');
+        const files = fs.readdirSync(from.directory || this.config.directory);
+        const { encrypt: doEncrypt, decrypt: doDecrypt } = require('./encryption');
+
+        const keyLengths = {
+            'aes-128-cbc': 32,
+            'aes-192-cbc': 48,
+            'aes-256-cbc': 64,
+            'aes-128-gcm': 32,
+            'aes-256-gcm': 64,
+        };
+
+        const validate = (key, algo) => {
+            if (!algo) return;
+            if (!key || key.length !== keyLengths[algo]) {
+                throw new Error(`${algo} requires ${keyLengths[algo]} hex characters`);
+            }
+        };
+
+        validate(from.encryptionKey, from.encryption);
+        validate(to.encryptionKey, to.encryption);
+
+        let successCount = 0, errorCount = 0;
+        const fromExt = from.extension || this.config.extension;
+        const toExt = to.extension || this.config.extension;
+        const fromDir = from.directory || this.config.directory;
+        const toDir = to.directory || this.config.directory;
+
+        // ✅ Create destination directory if it doesn't exist
+        if (!fs.existsSync(toDir)) {
+            fs.mkdirSync(toDir, { recursive: true });
+        }
+
+        files.forEach(file => {
+            const ext = path.extname(file).slice(1);
+            const name = path.basename(file, '.' + ext);
+            if (ext !== fromExt) return;
+            if (collections && !collections.includes(name)) return;
+
+            const fromPath = path.join(fromDir, file);
+            const toPath = path.join(toDir, `${name}.${toExt}`);
+
+            try {
+                const raw = fs.readFileSync(fromPath, 'utf8');
+                const json = from.encryption
+                    ? doDecrypt(raw, from.encryption, from.encryptionKey)
+                    : JSON.parse(raw);
+
+                const newContent = to.encryption
+                    ? doEncrypt(json, to.encryption, to.encryptionKey)
+                    : JSON.stringify(json, null, 3);
+
+                fs.writeFileSync(toPath, newContent);
+                successCount++;
+
+                // Delete old file if directory or extension changed
+                if (fromPath !== toPath && fs.existsSync(fromPath)) {
+                    fs.unlinkSync(fromPath);
+                }
+            } catch (err) {
+                console.error(`Failed to convert ${file}: ${err.message}`);
+                errorCount++;
+            }
+        });
+
+        // ✅ Delete fromDir if it's now empty and not same as toDir
+        if (fromDir !== toDir && fs.existsSync(fromDir)) {
+            const remaining = fs.readdirSync(fromDir);
+            if (remaining.length === 0) {
+                fs.rmdirSync(fromDir, { recursive: true });
+            }
+        }
+
+        return {
+            success: true,
+            converted: successCount,
+            failed: errorCount
+        };
+    }
+
+    /**
+     * Analyzes data based on provided parameters
+     * @param {object} param0 - Configuration object
+     * @param {string} param0.collection - Name of the collection to analyze
+     * @param {object} param0.filter - Filter criteria for the analysis
+     * @param {Array|object} param0.data - Data to be analyzed
+     * @param {object} param0.model - Data model definition
+     * @param {string} param0.apiKey - API key for authentication
+     * @param {string} param0.query - Query string for analysis
+     * @returns {Promise<any>} Result of the analysis
+     */
+    async analyse({ collection, filter, data, model, apiKey, query }) {
+        if (data && !Array.isArray(data)) return { success: false, err: 'Data must be an array' };
+        if (data && collection) return { success: false, err: 'Cannot specify collection when data is provided' };
+        if (filter && typeof filter !== 'object') return { success: false, err: 'Filter must be an object' };
+        if (!model) return { success: false, err: 'Model is required' };
+        if (!apiKey) return { success: false, err: 'API Key is required' };
+        if (!query) return { success: false, err: 'Query is required' };
+        if (query.length > 1024) return { success: false, err: 'Query exceeds maximum length of 1024 characters' };
+
+        var collData = data || this.get(collection).all()
+        if (filter) {
+            collData = collData.filter(item => this.matchesConditions(item, filter))
+        }
+        if (collData.length == 0) return { success: false, err: 'No matching data found' }
+
+        const genAI = new GoogleGenAI({ apiKey: apiKey })
+        const prompt = `
+    Analyze the following data array according to the specified conditions.
+    Return a JSON response with the exact structure shown in the example.
+
+    Example Response Format:
+    {
+        "indexes": [0, 2, 3],
+        "reason": "These items match the criteria because...",
+        "message": "Additional insights about the selection"
+    }
+
+    Data to Analyze:
+    ${JSON.stringify(collData, null, 2)}
+
+    Conditions:
+    ${query}
+
+    Important Rules:
+    1. Only return valid JSON in the specified format
+    2. "indexes" must be array of numbers matching data array indices
+    3. "reason" should explain your selection logic
+    4. Keep the response concise but meaningful
+    `
+
+        try {
+            const response = await genAI.models.generateContent({
+                model: model,
+                contents: prompt,
+            });
+            const responseText = response.text
+
+            // Clean the response (remove markdown code blocks if present)
+            const cleanResponse = responseText.replace(/```json|```/g, '').trim()
+
+            // Parse and validate the response
+            const parsedResponse = JSON.parse(cleanResponse);
+
+            if (!parsedResponse.indexes || !Array.isArray(parsedResponse.indexes)) {
+                throw new Error('Invalid response format: missing indexes array')
+            }
+
+            return {
+                success: true,
+                response: {
+                    ...parsedResponse,
+                    data: parsedResponse.indexes.map(index => collData[index])
+                }
+            };
+
+        } catch (error) {
+            console.error('AI Analysis Error:', error);
+            return {
+                success: false,
+                err: error.message || "Failed to process AI response"
+            };
+        }
+    }
+
+    rebuildBTree(collection) {
+        if (!collection) return { err: 'collection required!' };
+
+        const fullPath = this.getFilePath(collection);
+        if (!fs.existsSync(fullPath)) return { err: 404 };
+
+        let db = this.readFileData(fullPath)
+
+        this.btree = new BTree(3);
+        db.forEach(item => {
+            if (item.token) {
+                this.btree.insert(item.token, item);
+            } else {
+                console.error(`Item is missing a token:`, item);
+            }
+        });
+    }
+
+    matchesConditions(item, conditions) {
+        return Object.entries(conditions).every(([key, value]) => {
+            const fieldValue = item[key];
+
+            // Handle MongoDB-like operators
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                return Object.entries(value).every(([op, condVal]) => {
+                    switch (op) {
+                        case '$eq': return fieldValue === condVal;
+                        case '$ne': return fieldValue !== condVal;
+                        case '$gt': return fieldValue > condVal;
+                        case '$gte': return fieldValue >= condVal;
+                        case '$lt': return fieldValue < condVal;
+                        case '$lte': return fieldValue <= condVal;
+                        case '$in': return Array.isArray(condVal) && condVal.includes(fieldValue);
+                        case '$nin': return Array.isArray(condVal) && !condVal.includes(fieldValue);
+                        default: return false; // unknown operator
+                    }
+                });
+            }
+
+            // Default exact match
+            return fieldValue === value;
+        });
+    }
+
+    getAllFromBTree() {
+        return this.btree.traverse(this.btree.root);
+    }
+
+    generateUniqueId() {
+        if (this.config.encode === 'bson' && this.config.objectId) {
+            return new ObjectId()//.toString();
+        }
+        const timestamp = Date.now().toString(36);
+        const randomStr = Math.random().toString(36).substring(2, 10);
+        return `${timestamp}${randomStr}`;
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @param {any} data 
+     * @returns 
+     */
+    writeFile(name, data) {
+        if (!name) return { err: 'File name required' }
+        if (!data) return { err: 'Data required' }
+        if (name.includes('/') || name.includes('\\')) return { err: 'Invalid file name. Avoid special characters.' }
+        if (!Buffer.isBuffer(data)) return { err: 'Data must be a Buffer' }
+
+        if (!fs.existsSync(`${this.config.directory}/files`)) {
+            fs.mkdirSync(`${this.config.directory}/files`, { recursive: true });
+        }
+
+        const filePath = `${this.config.directory}/files/${name}`;
+        try {
+            fs.writeFileSync(filePath, data);
+            return { success: true };
+        } catch (error) {
+            return { err: `Failed to write file: ${error.message}` };
+        }
+    }
+
+    allFiles() {
+        if (!fs.existsSync(`${this.config.directory}/files`)) return []
+        const files = fs.readdirSync(`${this.config.directory}/files`);
+        return files
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @returns 
+     */
+    readFile(name) {
+        if (!name) return { err: 'File name required' };
+
+        if (!fs.existsSync(`${this.config.directory}/files`)) return { err: 'Files not found', code: 404 }
+
+        const filePath = `${this.config.directory}/files/${name}`;
+        if (!fs.existsSync(filePath)) {
+            return { err: 'File not found', code: 404 };
+        }
+        try {
+            const data = fs.readFileSync(filePath);
+            return { success: true, data };
+        } catch (error) {
+            return { err: `Failed to read file: ${error.message}` };
+        }
+    }
+
+    /**
+     * Reads and processes an image with various configuration options
+     * @param {string} name - The name or path of the image to read
+     * @param {object} [config] - Configuration options for image processing
+     * @param {boolean} [config.returnBase64=true] - Whether to return image as base64 string
+     * @param {number} [config.quality=1] - Image quality (0 to 1)
+     * @param {number} [config.pixels=0] - Resize to specific number of pixels (0 keeps original size)
+     * @param {boolean} [config.blackAndWhite=false] - Convert image to black and white
+     * @param {boolean} [config.mirror=false] - Mirror the image horizontally
+     * @param {boolean} [config.upToDown=false] - Flip the image vertically
+     * @param {boolean} [config.invert=false] - Invert image colors
+     * @param {number} [config.brightness=1] - Brightness adjustment (1 = normal)
+     * @param {number} [config.contrast=1] - Contrast adjustment (1 = normal)
+     * @param {number|null} [config.maxWidth=null] - Maximum width for resizing
+     * @param {number|null} [config.maxHeight=null] - Maximum height for resizing
+     * @returns {Promise<string|ImageData>} Processed image data (base64 string or ImageData object)
+     */
+    async readImage(name, config = {
+        returnBase64: true,
+        quality: 1,
+        pixels: 0, // 0 = keep original size
+        blackAndWhite: false,
+        mirror: false,
+        upToDown: false,
+        invert: false,
+        brightness: 1,
+        contrast: 1,
+        maxWidth: null,
+        maxHeight: null
+    }) {
+        if (!name) return { err: 'File name required' };
+        if (name.includes('/') || name.includes('\\')) return { err: 'Invalid file name. Avoid special characters.' }
+        if (!fs.existsSync(`${this.config.directory}/files`)) {
+            return { err: 'Files directory not found', code: 404 };
+        }
+
+        const filePath = `${this.config.directory}/files/${name}`;
+        if (!fs.existsSync(filePath)) {
+            return { err: 'File not found', code: 404 };
+        }
+
+        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.svg', '.ico', '.heic', '.avif', '.jfif'];
+        const ext = path.extname(name).toLowerCase();
+
+        if (!imageExtensions.includes(ext)) {
+            return { err: 'Not a valid image file' };
+        }
+
+        try {
+            const data = fs.readFileSync(filePath);
+
+            // Enhanced config with validation
+            const processingConfig = {
+                returnBase64: config.returnBase64 !== false,
+                quality: Math.max(0.1, Math.min(1, config.quality || 1)),
+                pixels: Math.max(0, config.pixels || 0),
+                blackAndWhite: Boolean(config.blackAndWhite),
+                mirror: Boolean(config.mirror),
+                upToDown: Boolean(config.upToDown),
+                invert: Boolean(config.invert),
+                brightness: Math.max(0.1, Math.min(5, config.brightness || 1)),
+                contrast: Math.max(0.1, Math.min(5, config.contrast || 1)),
+                maxWidth: config.maxWidth > 0 ? Math.round(config.maxWidth) : null,
+                maxHeight: config.maxHeight > 0 ? Math.round(config.maxHeight) : null
+            };
+
+            const res = await imageProcess(data, ext, processingConfig);
+
+            // Get file stats for additional info
+            const stats = fs.statSync(filePath);
+
+            return {
+                success: true,
+                data: res,
+                metadata: {
+                    filename: name,
+                    extension: ext,
+                    originalSize: stats.size,
+                    processingApplied: {
+                        resized: processingConfig.pixels > 0,
+                        qualityReduced: processingConfig.quality < 1,
+                        blackAndWhite: processingConfig.blackAndWhite,
+                        mirrored: processingConfig.mirror,
+                        flippedVertical: processingConfig.upToDown,
+                        inverted: processingConfig.invert,
+                        brightnessAdjusted: processingConfig.brightness !== 1,
+                        contrastAdjusted: processingConfig.contrast !== 1
+                    }
+                }
+            };
+
+        } catch (error) {
+            console.error('Image processing error:', error);
+            return {
+                err: `Failed to process image: ${error.message}`,
+                code: 'PROCESSING_ERROR'
+            };
+        }
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @returns 
+     */
+    deleteFile(name) {
+        if (!name) return { err: 'File name required' };
+
+        if (!fs.existsSync(`${this.config.directory}/files`)) return { err: 'Files not found', code: 404 }
+
+        const filePath = `${this.config.directory}/files/${name}`;
+        if (!fs.existsSync(filePath)) {
+            return { err: 'File not found', code: 404 };
+        }
+        try {
+            fs.unlinkSync(filePath);
+            return { success: true };
+        } catch (error) {
+            return { err: `Failed to delete file: ${error.message}` };
+        }
+    }
+}
+
+module.exports = eveloDB;

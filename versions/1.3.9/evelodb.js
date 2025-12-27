@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 const { encrypt, decrypt, generateKey } = require('./encryption');
 const { BSON, ObjectId } = require('bson');
@@ -215,10 +216,6 @@ class QueryResult {
         this.data = Array.isArray(data) ? data : []
     }
 
-    /**
-     * @param {number} offset - Starting index.
-     * @param {number} limit - Number of items to return.
-     */
     getList(offset = 0, limit = 10) {
         return this.data.slice(offset, offset + limit);
     }
@@ -227,10 +224,7 @@ class QueryResult {
         return this.data.length;
     }
 
-    /**
-     * @param {function} compareFn - Comparison function.
-     * @returns {QueryResult}
-     */
+    // You can add more methods like sort, etc.
     sort(compareFn) {
         return new QueryResult([...this.data].sort(compareFn));
     }
@@ -241,10 +235,6 @@ class QueryResult {
 }
 
 // eveloDB class
-
-/**
- * @class eveloDB
- */
 class eveloDB {
     constructor(config = {}) {
         this.config = { ...defaultConfig, ...config };
@@ -645,10 +635,6 @@ class eveloDB {
         return info;
     }
 
-    /**
-     * @param {number} length
-     * @returns 
-     */
     generateKey(length) {
         return generateKey(length);
     }
@@ -659,12 +645,6 @@ class eveloDB {
     }
 
     // Database operations
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} data 
-     * @returns 
-     */
     create(collection, data) {
         // Validate required parameters
         if (!collection) return { err: 'Collection name required' };
@@ -737,12 +717,6 @@ class eveloDB {
         }
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
     delete(collection, conditions) {
         if (!collection) return { err: 'collection required!' };
         if (!conditions) return { err: 'conditions required!' };
@@ -767,12 +741,6 @@ class eveloDB {
         };
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {any} data 
-     * @returns 
-     */
     inject(collection, data) {
         if (!collection) return { err: 'collection required!' };
         if (!data) return { err: 'data required!' };
@@ -782,12 +750,6 @@ class eveloDB {
         return { success: true };
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {any} data 
-     * @returns 
-     */
     writeData(collection, data) {
         if (!collection) return { err: 'collection required!' };
         if (collection.includes('/') || collection.includes('\\') || collection.includes('.') || collection.includes(' ')) {
@@ -800,12 +762,6 @@ class eveloDB {
         return { success: true };
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
     find(collection, conditions) {
         if (!collection) return { err: 'collection required!' };
         if (!conditions) return { err: 'conditions required!' };
@@ -819,12 +775,6 @@ class eveloDB {
         return new QueryResult(results);
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
     findOne(collection, conditions) {
         if (!collection) return { err: 'collection required!' };
         if (!conditions) return { err: 'conditions required!' };
@@ -837,12 +787,6 @@ class eveloDB {
         return db.find(item => this.matchesConditions(item, conditions)) || null;
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
     search(collection, conditions) {
         if (!collection) return { err: 'collection required!' };
         if (!conditions) return { err: 'conditions required!' };
@@ -873,11 +817,6 @@ class eveloDB {
         return new QueryResult(results);
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
     get(collection) {
         if (!collection) return { err: 'collection required!' };
 
@@ -889,11 +828,6 @@ class eveloDB {
         return new QueryResult(data);
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
     readData(collection) {
         if (!collection) return { err: 'collection required!' };
 
@@ -905,11 +839,6 @@ class eveloDB {
         return data;
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
     count(collection) {
         // 1. First check if collection exists (same as get())
         if (!collection) return { success: false, err: 'collection required!' };
@@ -940,12 +869,6 @@ class eveloDB {
         }
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} data 
-     * @returns 
-     */
     check(collection, data) {
         if (!collection) return { err: 'collection required!' };
         if (!data) return { err: 'conditions required!' };
@@ -953,14 +876,6 @@ class eveloDB {
         return this.find(collection, data).all().length > 0;
     }
 
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions
-     * @param {object} newData
-     * @returns 
-     */
     edit(collection, conditions, newData) {
         if (!collection) return { err: 'Collection name required' };
         if (!conditions) return { err: 'Conditions required' };
@@ -1020,11 +935,6 @@ class eveloDB {
         };
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
     drop(collection) {
         if (!collection) return { err: 'collection required!' };
 
@@ -1074,20 +984,10 @@ class eveloDB {
         }
     }
 
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
     reset(collection) {
         return this.drop(collection)
     }
 
-    /**
-     * 
-     * @param {object} param0 
-     * @returns 
-     */
     changeConfig({ from, to, collections }) {
 
         if (this.config.encode !== 'json' && (from.encryption || from.encryptionKey || to.encryption || to.encryptionKey)) {
@@ -1174,17 +1074,6 @@ class eveloDB {
         };
     }
 
-    /**
-     * Analyzes data based on provided parameters
-     * @param {object} param0 - Configuration object
-     * @param {string} param0.collection - Name of the collection to analyze
-     * @param {object} param0.filter - Filter criteria for the analysis
-     * @param {Array|object} param0.data - Data to be analyzed
-     * @param {object} param0.model - Data model definition
-     * @param {string} param0.apiKey - API key for authentication
-     * @param {string} param0.query - Query string for analysis
-     * @returns {Promise<any>} Result of the analysis
-     */
     async analyse({ collection, filter, data, model, apiKey, query }) {
         if (data && !Array.isArray(data)) return { success: false, err: 'Data must be an array' };
         if (data && collection) return { success: false, err: 'Cannot specify collection when data is provided' };
@@ -1313,15 +1202,9 @@ class eveloDB {
         }
         const timestamp = Date.now().toString(36);
         const randomStr = Math.random().toString(36).substring(2, 10);
-        return `${timestamp}${randomStr}`;
+        return `${timestamp}_${randomStr}`;
     }
 
-    /**
-     * 
-     * @param {string} name 
-     * @param {any} data 
-     * @returns 
-     */
     writeFile(name, data) {
         if (!name) return { err: 'File name required' }
         if (!data) return { err: 'Data required' }
@@ -1347,11 +1230,6 @@ class eveloDB {
         return files
     }
 
-    /**
-     * 
-     * @param {string} name 
-     * @returns 
-     */
     readFile(name) {
         if (!name) return { err: 'File name required' };
 
@@ -1369,23 +1247,6 @@ class eveloDB {
         }
     }
 
-    /**
-     * Reads and processes an image with various configuration options
-     * @param {string} name - The name or path of the image to read
-     * @param {object} [config] - Configuration options for image processing
-     * @param {boolean} [config.returnBase64=true] - Whether to return image as base64 string
-     * @param {number} [config.quality=1] - Image quality (0 to 1)
-     * @param {number} [config.pixels=0] - Resize to specific number of pixels (0 keeps original size)
-     * @param {boolean} [config.blackAndWhite=false] - Convert image to black and white
-     * @param {boolean} [config.mirror=false] - Mirror the image horizontally
-     * @param {boolean} [config.upToDown=false] - Flip the image vertically
-     * @param {boolean} [config.invert=false] - Invert image colors
-     * @param {number} [config.brightness=1] - Brightness adjustment (1 = normal)
-     * @param {number} [config.contrast=1] - Contrast adjustment (1 = normal)
-     * @param {number|null} [config.maxWidth=null] - Maximum width for resizing
-     * @param {number|null} [config.maxHeight=null] - Maximum height for resizing
-     * @returns {Promise<string|ImageData>} Processed image data (base64 string or ImageData object)
-     */
     async readImage(name, config = {
         returnBase64: true,
         quality: 1,
@@ -1469,11 +1330,6 @@ class eveloDB {
         }
     }
 
-    /**
-     * 
-     * @param {string} name 
-     * @returns 
-     */
     deleteFile(name) {
         if (!name) return { err: 'File name required' };
 

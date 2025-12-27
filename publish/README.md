@@ -781,6 +781,8 @@ const res = db.changeConfig({
 - ✓ Fast retrieval
 - ✓ No Repeat option
 - ✓ Auto Primary Key option
+- ✓ File Store
+- ✓ Image Utilities
 
 <hr>
 
@@ -788,10 +790,12 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
-- 1.3.8
-  - Unlimited collection in BSON
+- 1.4.1
+  - Intellisense Enhanced
+- 1.3.9
+  - Unlimited collection size in BSON
   - File Store
-  - Read images with filters
+  - Read images utilities
 - 1.2.9
   - Comparison Operators
   - Improve find, search, update, delete
