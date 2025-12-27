@@ -686,7 +686,7 @@ class eveloDB {
                     // Compare only user-provided fields
                     return Object.keys(data).every(key => {
                         // Skip comparison if this is an auto-generated field
-                        if (key === '__id') return true;
+                        if (key === this.config.autoPrimaryKey) return true;
                         return deepCompare(existingItem[key], data[key]);
                     }) &&
                         // Also ensure we're not matching against records missing compared fields
