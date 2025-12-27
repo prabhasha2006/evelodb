@@ -20,7 +20,7 @@ const user = {
     state: 'pending'
 }
 
-//console.log(db.create('users', user))
+console.log(db.create('users', user))
 
 
 //intellisense not working
