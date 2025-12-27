@@ -979,12 +979,12 @@ class eveloDB {
 
                 if (this.config.noRepeat) {
                     const isDuplicate = db.some(existingItem => {
-                        if (existingItem.__id && item.__id && existingItem.__id === item.__id) {
+                        if (existingItem[this.config.autoPrimaryKey] && item[this.config.autoPrimaryKey] && existingItem[this.config.autoPrimaryKey] === item[this.config.autoPrimaryKey]) {
                             return false;
                         }
 
                         return Object.keys(newData).every(key => {
-                            if (key === '__id') return false;
+                            if (key === this.config.autoPrimaryKey) return false;
                             return deepCompare(existingItem[key], updatedItem[key]);
                         });
                     });
