@@ -790,6 +790,8 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
+- 1.4.3
+  - Duplicate data bug fixed
 - 1.4.1
   - Intellisense Enhanced
 - 1.3.9

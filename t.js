@@ -20,13 +20,12 @@ const user = {
     state: 'pending'
 }
 
-console.log(db.create('users', user))
+//console.log(db.create('users', user))
 
 
 //intellisense not working
 //console.log(db.find('users', {key: 'mf0z1grw_18fxwjz9'}).all())
-console.log(db.edit('users', { id: "mjo0n55dl51mw06d" }, { state: 'accept' }))
-
+console.log(db.edit('users', { id: "mjk1v8mbcco74rd6" }, { state: 'accept' }))
 
 async function a() {
     const img = await db.readImage('image.jpg', {
