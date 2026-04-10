@@ -110,25 +110,29 @@ const defaultConfig = {
 
 // Deep comparison function
 function deepCompare(obj1, obj2) {
-    if (typeof obj1 === 'object' && typeof obj2 === 'object') {
-        if (Array.isArray(obj1)) {
-            if (!Array.isArray(obj2)) return false;
-            if (obj1.length !== obj2.length) return false;
-            for (let i = 0; i < obj1.length; i++) {
-                if (!deepCompare(obj1[i], obj2[i])) return false;
-            }
-            return true;
-        } else {
-            const keys1 = Object.keys(obj1);
-            const keys2 = Object.keys(obj2);
-            if (keys1.length !== keys2.length) return false;
-            for (let key of keys1) {
-                if (!deepCompare(obj1[key], obj2[key])) return false;
-            }
-            return true;
-        }
-    } else {
+    if (obj1 === obj2) return true;
+    if (obj1 === null || obj2 === null || typeof obj1 !== 'object' || typeof obj2 !== 'object') {
         return obj1 === obj2;
+    }
+
+    const isArr1 = Array.isArray(obj1);
+    const isArr2 = Array.isArray(obj2);
+    if (isArr1 !== isArr2) return false;
+
+    if (isArr1) {
+        if (obj1.length !== obj2.length) return false;
+        for (let i = 0; i < obj1.length; i++) {
+            if (!deepCompare(obj1[i], obj2[i])) return false;
+        }
+        return true;
+    } else {
+        const keys1 = Object.keys(obj1);
+        const keys2 = Object.keys(obj2);
+        if (keys1.length !== keys2.length) return false;
+        for (let key of keys1) {
+            if (!Object.prototype.hasOwnProperty.call(obj2, key) || !deepCompare(obj1[key], obj2[key])) return false;
+        }
+        return true;
     }
 }
 
@@ -211,8 +215,13 @@ class BTree {
 }
 
 class QueryResult {
-    constructor(data) {
-        this.data = Array.isArray(data) ? data : []
+    constructor(data, err = undefined) {
+        if (err) {
+            this.err = err;
+            this.data = [];
+        } else {
+            this.data = Array.isArray(data) ? data : [];
+        }
     }
 
     /**
@@ -220,10 +229,12 @@ class QueryResult {
      * @param {number} limit - Number of items to return.
      */
     getList(offset = 0, limit = 10) {
+        if (this.err) return { err: this.err };
         return this.data.slice(offset, offset + limit);
     }
 
     count() {
+        if (this.err) return { err: this.err };
         return this.data.length;
     }
 
@@ -232,10 +243,12 @@ class QueryResult {
      * @returns {QueryResult}
      */
     sort(compareFn) {
+        if (this.err) return this;
         return new QueryResult([...this.data].sort(compareFn));
     }
 
     all() {
+        if (this.err) return { err: this.err };
         return this.data;
     }
 }
@@ -680,6 +693,8 @@ class eveloDB {
         if (fs.existsSync(fullPath)) {
             db = this.readFileData(fullPath)
 
+            if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
+
             // Early noRepeat check before modifying data
             if (this.config.noRepeat) {
                 const isDuplicate = db.some(existingItem => {
@@ -752,6 +767,8 @@ class eveloDB {
 
         let db = this.readFileData(fullPath);
 
+        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
+
         const originalLength = db.length;
 
         // Filter out matching items
@@ -807,13 +824,14 @@ class eveloDB {
      * @returns 
      */
     find(collection, conditions) {
-        if (!collection) return { err: 'collection required!' };
-        if (!conditions) return { err: 'conditions required!' };
+        if (!collection) return new QueryResult(null, 'collection required!');
+        if (!conditions) return new QueryResult(null, 'conditions required!');
 
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return new QueryResult([]);
 
         const db = this.readFileData(fullPath);
+        if (!Array.isArray(db)) return new QueryResult(null, 'Collection data is not an array');
         const results = db.filter(item => this.matchesConditions(item, conditions));
 
         return new QueryResult(results);
@@ -833,6 +851,7 @@ class eveloDB {
         if (!fs.existsSync(fullPath)) return null;
 
         const db = this.readFileData(fullPath);
+        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
 
         return db.find(item => this.matchesConditions(item, conditions)) || null;
     }
@@ -844,13 +863,14 @@ class eveloDB {
      * @returns 
      */
     search(collection, conditions) {
-        if (!collection) return { err: 'collection required!' };
-        if (!conditions) return { err: 'conditions required!' };
+        if (!collection) return new QueryResult(null, 'collection required!');
+        if (!conditions) return new QueryResult(null, 'conditions required!');
 
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return new QueryResult([]);
 
         const db = this.readFileData(fullPath);
+        if (!Array.isArray(db)) return new QueryResult(null, 'Collection data is not an array');
         const results = db.filter(item => {
             return Object.entries(conditions).every(([key, value]) => {
                 const field = item[key];
@@ -879,12 +899,13 @@ class eveloDB {
      * @returns 
      */
     get(collection) {
-        if (!collection) return { err: 'collection required!' };
+        if (!collection) return new QueryResult(null, 'collection required!');
 
         const fullPath = this.getFilePath(collection);
         if (!fs.existsSync(fullPath)) return new QueryResult(undefined);
 
         const data = this.readFileData(fullPath);
+        if (!Array.isArray(data)) return new QueryResult(null, 'Collection data is not an array');
 
         return new QueryResult(data);
     }
@@ -911,11 +932,21 @@ class eveloDB {
      * @returns 
      */
     count(collection) {
-        // 1. First check if collection exists (same as get())
+        // 1. First check if collection exists
         if (!collection) return { success: false, err: 'collection required!' };
 
         // 2. Get the data
-        const result = this.get(collection).all()
+        const getResult = this.get(collection);
+
+        // Handle array validation error from get()
+        if (getResult && getResult.err) {
+            return {
+                success: false,
+                err: getResult.err
+            };
+        }
+
+        const result = getResult.all();
 
         // 3. Handle potential errors from get()
         if (!result) {
@@ -950,7 +981,10 @@ class eveloDB {
         if (!collection) return { err: 'collection required!' };
         if (!data) return { err: 'conditions required!' };
 
-        return this.find(collection, data).all().length > 0;
+        const result = this.find(collection, data);
+        if (result && result.err) return result;
+
+        return result.all().length > 0;
     }
 
 
@@ -970,6 +1004,7 @@ class eveloDB {
         if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
 
         let db = this.readFileData(fullPath);
+        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
         let editedCount = 0;
         let duplicateFound = false;
 
@@ -983,10 +1018,13 @@ class eveloDB {
                             return false;
                         }
 
-                        return Object.keys(newData).every(key => {
+                        // Compare entire object
+                        return deepCompare(existingItem, updatedItem);
+                        
+                        /* return Object.keys(newData).every(key => {
                             if (key === this.config.autoPrimaryKey) return false;
                             return deepCompare(existingItem[key], updatedItem[key]);
-                        });
+                        }); */
                     });
 
                     if (isDuplicate) {
@@ -1194,7 +1232,13 @@ class eveloDB {
         if (!query) return { success: false, err: 'Query is required' };
         if (query.length > 1024) return { success: false, err: 'Query exceeds maximum length of 1024 characters' };
 
-        var collData = data || this.get(collection).all()
+        var collData = data;
+        if (!collData) {
+            const getResult = this.get(collection);
+            if (getResult && getResult.err) return { success: false, err: getResult.err };
+            collData = getResult.all();
+        }
+
         if (filter) {
             collData = collData.filter(item => this.matchesConditions(item, filter))
         }
@@ -1266,6 +1310,7 @@ class eveloDB {
         if (!fs.existsSync(fullPath)) return { err: 404 };
 
         let db = this.readFileData(fullPath)
+        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
 
         this.btree = new BTree(3);
         db.forEach(item => {
@@ -1283,23 +1328,28 @@ class eveloDB {
 
             // Handle MongoDB-like operators
             if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                return Object.entries(value).every(([op, condVal]) => {
-                    switch (op) {
-                        case '$eq': return fieldValue === condVal;
-                        case '$ne': return fieldValue !== condVal;
-                        case '$gt': return fieldValue > condVal;
-                        case '$gte': return fieldValue >= condVal;
-                        case '$lt': return fieldValue < condVal;
-                        case '$lte': return fieldValue <= condVal;
-                        case '$in': return Array.isArray(condVal) && condVal.includes(fieldValue);
-                        case '$nin': return Array.isArray(condVal) && !condVal.includes(fieldValue);
-                        default: return false; // unknown operator
-                    }
-                });
+                const keys = Object.keys(value);
+                const isOperatorObject = keys.length > 0 && keys.every(k => k.startsWith('$'));
+
+                if (isOperatorObject) {
+                    return Object.entries(value).every(([op, condVal]) => {
+                        switch (op) {
+                            case '$eq': return deepCompare(fieldValue, condVal);
+                            case '$ne': return !deepCompare(fieldValue, condVal);
+                            case '$gt': return fieldValue > condVal;
+                            case '$gte': return fieldValue >= condVal;
+                            case '$lt': return fieldValue < condVal;
+                            case '$lte': return fieldValue <= condVal;
+                            case '$in': return Array.isArray(condVal) && condVal.includes(fieldValue);
+                            case '$nin': return Array.isArray(condVal) && !condVal.includes(fieldValue);
+                            default: return false; // unknown operator
+                        }
+                    });
+                }
             }
 
-            // Default exact match
-            return fieldValue === value;
+            // Default deep match
+            return deepCompare(fieldValue, value);
         });
     }
 

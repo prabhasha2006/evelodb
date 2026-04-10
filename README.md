@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a><img src="https://i.ibb.co/t4c363X/20240305-125417.png" width="200"></a>
+  <a><img src="https://cdn.evelocore.com/files/Evelocore/projects/evelodb/icon.png" width="200"></a>
   <br>
   <b>EveloDB</b>
   <br>
@@ -790,7 +790,10 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
-- 1.4.3
+- 1.4.6
+  - Able to compare objects and arrays in operations
+  - Improve find, update, delete operations
+- 1.4.4
   - Duplicate data bug fixed
 - 1.4.1
   - Intellisense Enhanced
@@ -828,7 +831,7 @@ const res = db.changeConfig({
 <a id="server"></a>
 # 🌍 EveloDB Server
 
-> 📝 **Note:** EveloDB Server is currently under development and not officially released.
+[Official Documentation](https://evelodb.evelocore.com/guide?section=3&topic=installation)
 
 **EveloDB Server** is a lightweight, powerful, and flexible server built on top of the local BSON-based DBMS **eveloDB**. It provides an all-in-one solution to manage local databases with a user-friendly UI and secure backend system.
 
@@ -857,6 +860,9 @@ const res = db.changeConfig({
 - 🌐 **CORS Origin Control**
   - Manage which frontend origins can access your databases.
 
+- 🖥️ **EveloDB Shell**
+  - Run eveloDB commands in the browser.
+
 - 📤📥 **Import/Export Collections**
   - Backup or import collections as **JSON** or **BSON** files.
 
@@ -876,6 +882,7 @@ Follow us for updates, announcements, and support:
     <a href="https://whatsapp.com/channel/0029VaxherLJP212qRX1hH0D" target="_blank"><img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white"/></a>
     <a href="https://discord.gg/wy2FwTMC" target="_blank"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"/></a>
     <a href="https://www.facebook.com/profile.php?id=61566785835989" target="_blank"><img src="https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white"/></a>
+    <a href="https://www.linkedin.com/in/kumuthu-prabhasha/" target="_blank"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
 </p>
 
 <br>

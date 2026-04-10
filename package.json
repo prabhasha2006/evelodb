@@ -24,7 +24,7 @@
     "bson",
     "json"
   ],
-  "author": "Your Name",
+  "author": "Evelocore",
   "license": "MIT",
   "devDependencies": {
     "javascript-obfuscator": "^4.1.1"
