@@ -1,13 +1,31 @@
 {
   "name": "evelodb",
+  "version": "1.4.9",
   "description": "An awesome local database management system with nodejs. Made by Evelocore. With B-tree Operations.",
-  "version": "1.4.6",
-  "main": "evelodb.js",
-  "types": "evelodb.d.ts",
+  "main": "dist/cjs/evelodb.js",
+  "module": "dist/esm/evelodb.js",
+  "types": "dist/cjs/evelodb.d.ts",
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./dist/esm/evelodb.d.ts",
+        "require": "./dist/cjs/evelodb.d.ts"
+      },
+      "import": "./dist/esm/evelodb.js",
+      "require": "./dist/cjs/evelodb.js"
+    }
+  },
   "files": [
-    "*.js",
-    "*.d.ts"
+    "dist"
   ],
+  "scripts": {
+    "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "clean": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true });\"",
+    "build:cjs": "tsc -p tsconfig.json --module commonjs --outDir dist/cjs",
+    "build:esm": "tsc -p tsconfig.json --module esnext --outDir dist/esm && node -e \"const fs = require('fs'); fs.writeFileSync('dist/esm/package.json', JSON.stringify({ type: 'module' }));\"",
+    "prepare": "npm run build"
+  },
   "keywords": [
     "evelodb",
     "database",
@@ -22,8 +40,11 @@
   "dependencies": {
     "@google/genai": "^1.8.0",
     "bson": "^6.10.4",
-    "crypto": "^1.0.1",
     "sharp": "^0.34.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
   },
   "author": "Evelocore",
   "license": "MIT"

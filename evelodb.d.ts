@@ -55,7 +55,7 @@ export default class eveloDB {
 
     getFilePath(collection: string): string;
 
-    create(collection: string, data: object): { success: boolean; [key: string]: any };
+    create(collection: string, data: object): { success: boolean;[key: string]: any };
     delete(collection: string, conditions: object): { success: boolean; deletedCount: number } | { err: any };
     inject(collection: string, data: any): { success: boolean };
     writeData(collection: string, data: any): { success: boolean };

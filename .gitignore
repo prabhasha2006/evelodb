@@ -3,3 +3,5 @@
 # dependencies
 /node_modules
 /evelodatabase
+/publish/node_modules
+/publish/dist

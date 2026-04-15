@@ -19,7 +19,6 @@
 
 ## Table of Contents
 - [📥 Installation](#installation)
-- [📘 TypeScript / ES Modules](#typescript)
 - [🔢 Comparison Operators](#comparison-operators)
 - [⚙️ Operations](#operations)
 - [🔍 Get Query Result](#query-result)
@@ -44,33 +43,29 @@ npm i evelodb
 ```
 
 ## Import
-
-### CommonJS
 ```js
-const eveloDB = require('evelodb');
+const eveloDB = require('evelodb')
 const db = new eveloDB();
 ```
-
-### TypeScript / ES Modules
-```typescript
-import eveloDB from 'evelodb';
-const db = new eveloDB();
-```
-
 
 ### Optional Configuration
 ```js
-const db = new eveloDB({
-    directory: './evelodatabase', // ./evelodatabase/users.db
-    extension: 'db', // users.db
-    encryption: '<encryption_method>',
-    encryptionKey: '<encryption_key>',
-    noRepeat: false,
-    autoPrimaryKey: true,
-    encode: 'bson'
-});
+let db
+try {
+    db = new eveloDB({
+        directory: './evelodatabase', // ./evelodatabase/users.db
+        extension: 'db', // users.db
+        encryption: '<encryption_method>',
+        encryptionKey: '<encryption_key>',
+        noRepeat: false,
+        autoPrimaryKey: true,
+        encode: 'bson'
+    })
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
 ```
-
 
 ### Configuration Parameters
 
@@ -92,38 +87,6 @@ const db = new eveloDB({
   - `string`: Put your own id field name (e.g., `'id'`, `'key'`)
 
 <br><br>
-
-<a id="typescript"></a>
-# 📘 TypeScript / ES Modules
-
-EveloDB is fully written in TypeScript and supports both CommonJS and ES Module environments natively.
-
-### Importing Types
-You can import types like `EveloDBConfig` or `QueryResult` directly using the `type` keyword:
-
-```typescript
-import eveloDB, { type EveloDBConfig } from 'evelodb';
-
-const config: EveloDBConfig = {
-    directory: './database',
-    extension: 'db',
-    noRepeat: true
-};
-
-const db = new eveloDB(config);
-```
-
-
-### Type Examples
-| Exported Type | Description |
-|---|---|
-| `EveloDBConfig` | Configuration options for the database instance |
-| `QueryResult<T>` | Wrapper for return values of `find`, `get`, and `search` |
-| `Conditions` | Type for query filter objects |
-| `AnalyseResult` | Type for AI analysis responses |
-
-<br><br>
-
 
 <a id="comparison-operators"></a>
 # 🔢 Comparison Operators
@@ -699,15 +662,20 @@ db.deleteFile('profile.pdf')
 
 ### Configuration
 ```js
-const eveloDB = require('evelodb');
-const db = new eveloDB({
-    directory: './evelodatabase',
-    extension: 'db',
-    encryption: '<encryption_method>',
-    encryptionKey: '<encryption_key>',
-});
+const eveloDB = require('evelodb')
+let db
+try {
+    db = new eveloDB({
+        directory: './evelodatabase',
+        extension: 'db',
+        encryption: '<encryption_method>',
+        encryptionKey: '<encryption_key>',
+    })
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
 ```
-
 
 ### Encryption Methods
 - `aes-128-cbc` (16 bytes) - 32 hex characters
@@ -718,14 +686,19 @@ const db = new eveloDB({
 
 ### Example Configuration
 ```js
-const eveloDB = require('evelodb');
-const db = new eveloDB({
-    extension: 'db',
-    encryption: 'aes-256-cbc',
-    encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' // 64 hex characters
-});
+const eveloDB = require('evelodb')
+let db
+try {
+    db = new eveloDB({
+        extension: 'db',
+        encryption: 'aes-256-cbc',
+        encryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' // 64 hex characters
+    })
+} catch (err) {
+    console.error('Init Error:', err.message);
+    process.exit(1);
+}
 ```
-
 
 ### Generate Hex Key
 
@@ -773,14 +746,17 @@ console.log(res)
 // { success: true, converted: 2, failed: 0 }
 
 // Initialize again
-const db = new eveloDB({
-    directory: './database',
-    extension: 'db',
-    encryption: 'aes-128-cbc',
-    encryptionKey: '0123456789abcdef0123456789abcdef'
-});
+try {
+    db = new eveloDB({
+        directory: './database',
+        extension: 'db',
+        encryption: 'aes-128-cbc',
+        encryptionKey: '0123456789abcdef0123456789abcdef'
+    });
+} catch (err) {
+    console.error('Re-init Error:', err.message);
+}
 ```
-
 If you remove `encryption` and `encryptionKey` parameters in `to` object, it will remove the encryptions in your database and continue with json string.
 ```js
 const res = db.changeConfig({
@@ -814,13 +790,9 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
-- 1.4.9
-  - **Full TypeScript Support**: Native definitions included for all methods.
-  - **Dual-Module Build**: Seamless support for both CommonJS and ES Modules.
-  - **Improved Reliability**: Fixed "not constructable" errors in strict ESM projects.
 - 1.4.8
-  - **Object Comparison**: Able to compare objects and arrays in operations.
-  - **Enhanced Operations**: Improved performance for find, update, and delete.
+  - Able to compare objects and arrays in operations
+  - Improve find, update, delete operations
 - 1.4.4
   - Duplicate data bug fixed
 - 1.4.1

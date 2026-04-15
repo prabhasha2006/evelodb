@@ -1,5 +1,5 @@
 
-const eveloDB = require('./evelodb')
+const eveloDB = require('evelodb')
 const fs = require('fs');
 let db
 try {
@@ -23,7 +23,7 @@ const user = {
     hobbies: ["a", "b"]
 }
 
-//console.log(db.create('users', user))
+console.log(db.create('users', user))
 
 
 //intellisense not working
