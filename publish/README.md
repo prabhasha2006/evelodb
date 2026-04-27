@@ -814,7 +814,7 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
-- 1.4.9
+- 1.4.10
   - **Full TypeScript Support**: Native definitions included for all methods.
   - **Dual-Module Build**: Seamless support for both CommonJS and ES Modules.
   - **Improved Reliability**: Fixed "not constructable" errors in strict ESM projects.
