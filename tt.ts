@@ -1,4 +1,4 @@
-import EveDB, { type EveloDBConfig } from "./publish/evelodb";
+import EveDB, { type EveloDBConfig } from "evelodb";
 
 const config: EveloDBConfig = {
     extension: "db",
@@ -13,12 +13,44 @@ const config: EveloDBConfig = {
 
 const db = new EveDB(config);
 
-const a = db.create("test", {
-    password: "password",
-    state: "accept",
-});
+for (let i = 0; i < 1; i++) {
+const a = db.create("cdn", {
+    contentHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 
-const b = db.readData("test");
+    extension: "png",
+    mimeType: "image/png",
+    fileSize: 2048,
+    checksum: "crc32:ab3f9921",
+
+    createdAt: "2006-07-13T00:00:00Z",
+    expireAt: null,
+    lastAccessedAt: "2006-07-13T00:00:00Z",
+
+    tokenCount: 1,
+    tokens: [
+        {
+            key: "8872398",
+            fileName: "image.png",
+            createdBy: "user_abc",
+            createdAt: "2006-07-13T00:00:00Z",
+            expiresAt: null,
+            accessCount: 42,
+            lastAccessedAt: "2006-07-13T00:00:00Z",
+            permissions: {
+                download: true,
+                hotlink: true,
+                maxDownloads: null
+            }
+        }
+    ],
+
+    totalAccessCount: 42
+})
+}
+
+/* const b = db.delete("cdn", {
+    _id: "mohbahmia1k0z3h6"
+})
 console.log(b);
-
+ */
 //console.log(a);

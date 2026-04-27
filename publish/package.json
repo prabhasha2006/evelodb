@@ -1,6 +1,6 @@
 {
   "name": "evelodb",
-  "version": "1.4.10",
+  "version": "1.4.11",
   "description": "An awesome local database management system with nodejs. Made by Evelocore. With B-tree Operations.",
   "main": "dist/cjs/evelodb.js",
   "module": "dist/esm/evelodb.js",

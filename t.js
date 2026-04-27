@@ -1,38 +1,18 @@
 
-const eveloDB = require('./evelodb.js')
-const fs = require('fs');
-let db
-try {
-    db = new eveloDB({
-        noRepeat: true,
-        encode: 'json',
-        autoPrimaryKey: 'id',
-    })
-} catch (error) {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
+const EveloDB = require('evelodb')
+
+const config = {
+    extension: "db",
+    tabspace: 3,
+    encode: "bson",
+    encryption: null,
+    encryptionKey: null,
+    noRepeat: false,
+    autoPrimaryKey: true,
+    objectId: false,    
 }
 
-const user = {
-    name: "Kumuthu",
-    age: 13,
-    state: 'pending',
-    data: {
-        url: "kp"
-    },
-    hobbies: ["a", "b"]
-}
+const db = new EveloDB(config);
 
-console.log(db.create('users', user))
-
-
-//intellisense not working
-console.log(db.find('users', {
-    name: "Kumuthu",
-    age: 13,
-    state: 'pending',
-    data: {
-        url: "kp"
-    }
-}).all())
-//console.log(db.edit('users', { id: "mjo0m3vom1cha41g" }, { state: 'accept' }))
+const b = db.get("cdn").count()
+console.log(b);

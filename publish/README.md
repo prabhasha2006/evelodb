@@ -23,8 +23,8 @@
 - [🔢 Comparison Operators](#comparison-operators)
 - [⚙️ Operations](#operations)
 - [🔍 Get Query Result](#query-result)
+- [📝 Choosing the Right Encoding](#usebson)
 - [🧠 AI Analyse](#ai-analyse)
-- [📝 Use BSON binary encoded](#usebson)
 - [📁 Store Files](#filehandle)
 - [🖼️ Image Utilities](#filehandleimg)
 - [🔐 Encryptions](#encryptions)
@@ -74,16 +74,18 @@ const db = new eveloDB({
 
 ### Configuration Parameters
 
-| Parameter        | Type     | Description                              | Example                     | Default                     |
-|------------------|----------|------------------------------------------|-----------------------------|-----------------------------|
-| `directory`      | string   | Where database files are stored          | `'./database'`              | `'./evelodatabase'`         |
-| `extension`      | string   | File extension for DB files              | `'db'`, `'edb'`             | `'json'`                    |
-| `encode`         | string   | Data encoding system (JSON / BSON)       | `'json'` `'bson'`           | `json`                      |
-| `objectId`       | boolean  | Primary key type (ObjectId / String)     | `true`                      | `false`                     |
-| `encryption`     | string   | Encryption algorithm                     | `'aes-256-cbc'`             | `null`                      |
-| `encryptionKey`  | string   | Key (length varies by algorithm)         | 64-char hex for AES-256     | `null`                      |
-| `noRepeat`       | boolean  | Reject duplicate data                    | `true`/`false`              | `false`                     |
-| `autoPrimaryKey` | string   | Auto-create unique IDs (_id)             | `true`/`false`/`'id'`       | `true`                      |
+| Parameter          | Type     | Description                                  | Example                     | Default                     |
+|--------------------|----------|----------------------------------------------|-----------------------------|-----------------------------|
+| `directory`        | string   | Where database files are stored              | `'./database'`              | `'./evelodatabase'`         |
+| `extension`        | string   | File extension for DB files                  | `'db'`, `'edb'`             | `'json'`                    |
+| `encode`           | string   | Data encoding system (JSON / BSON)           | `'json'` `'bson'`           | `'json'`                    |
+| `maxHandles`       | number   | Max open collection handles (LRU)             | `128`                       | `64`                        |
+| `compactThreshold` | number   | Auto-compact ratio (0.1 - 0.9)               | `0.3`                       | `0.3`                       |
+| `objectId`         | boolean  | Primary key type (ObjectId / String)         | `true`                      | `false`                     |
+| `encryption`       | string   | Encryption algorithm                         | `'aes-256-cbc'`             | `null`                      |
+| `encryptionKey`    | string   | Key (length varies by algorithm)             | 64-char hex for AES-256     | `null`                      |
+| `noRepeat`         | boolean  | Reject duplicate data                        | `true`/`false`              | `false`                     |
+| `autoPrimaryKey`   | string   | Auto-create unique IDs                       | `true`/`false`/`'id'`       | `true`                      |
 
 
 - ### autoPrimaryKey
@@ -555,35 +557,41 @@ Response:
 <br><br>
 
 <a id="usebson"></a>
-# 📝 Use BSON encoded
+# 📝 Choosing the Right Encoding
 
-> ###  Binary Serialized Object Notation with EveloDB
+EveloDB supports two encoding systems. Choosing the right one depends on your project's scale and development needs:
 
-- EveloDB can handle both JSON and BSON encoded data. Here's how to use BSON encoded data with eveloDB: 
-- JSON use string for keys, while BSON use ObjectId for keys.
-- BSON (Binary JSON) is the optimal format for storing and maintaining database records when human readability is not required.
+### 📄 JSON (`encode: 'json'`) - *Development Friendly*
+- **Best for**: Simple development, debugging, and small-scale projects.
+- **Visibility**: Data is stored as human-readable JSON. You can open the files in any text editor to see exactly what's inside.
+- **Limitation**: As collections grow, reading and writing large JSON files becomes slower.
 
-### Configuration with BSON encoding
+### 💎 BSON (`encode: 'bson'`) - *Production Ready*
+- **Best for**: Large-scale projects, high-performance needs, and production environments.
+- **Performance**: Powered by **B-Tree Indexing** (`.bidx`) and **WAL** (`.wal`) for lightning-fast lookups and crash recovery.
+- **Binary Format**: Data is stored in a compact binary format (optimized for machines, not humans).
+- **Efficiency**: Handles massive amounts of data with minimal memory overhead using LRU handle management.
+
+### Configuration Example
 ```js
 const eveloDB = require('evelodb')
-let db
-try {
-    db = new eveloDB({
-        directory: './evelodatabase',
-        extension: 'db', // default 'bson'
-        encode: 'bson',
-    })
-} catch (err) {
-    console.error('Init Error:', err.message);
-    process.exit(1);
-}
+const db = new eveloDB({
+    directory: './data',
+    extension: 'db',
+    encode: 'bson',         // Use BSON for performance
+    maxHandles: 128,        // Keep 128 collections open in RAM
+    compactThreshold: 0.3   // Auto-compact when 30% of data is deleted
+})
 ```
-- `encode: 'bson'` for BSON encoding
-- `encode: 'json'` for JSON encoding (default)
 
-### Summery
-- JSON is faster than BSON when doesn't use encryption.
-- If you want unreadable database, use BSON
+### Comparison at a Glance
+| Feature | JSON | BSON |
+|---------|------|------|
+| **Primary Key Lookup** | Full Scan (O(n)) | B-Tree Index (O(log n)) |
+| **Crash Protection** | Atomic Rename | WAL + Atomic Rename |
+| **Human Readable** | Yes ✅ | No ❌ |
+| **Data Capacity** | Small/Medium | Very Large 🚀 |
+| **Memory Usage** | Loads whole file | Memory-mapped chunks |
 
 <br><br>
 
@@ -814,6 +822,13 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
+- 1.4.11
+  - **🚀 High-Performance B-Tree Indexing**: Introduced `.bidx` files for O(log n) lookups. Primary key searches are now nearly instant regardless of database size.
+  - **🛡️ Write-Ahead Logging (WAL)**: Added `.wal` files to ensure data integrity. Changes are logged before being committed, allowing recovery from crashes.
+  - **♻️ Auto-Compaction**: BSON collections now automatically reclaim disk space when the fragmentation (tombstone) ratio exceeds a configurable threshold.
+  - **🧠 LRU Handle Management**: Efficiently handle hundreds of collections with automatic memory eviction for inactive handles (`maxHandles`).
+  - **💎 Atomic Writes**: Eliminated file corruption risk by using temporary files and atomic renames for all save operations.
+  - **⚡ Optimized `noRepeat`**: High-performance duplicate checking using fingerprinting (O(n) complexity).
 - 1.4.10
   - **Full TypeScript Support**: Native definitions included for all methods.
   - **Dual-Module Build**: Seamless support for both CommonJS and ES Modules.
