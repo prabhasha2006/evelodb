@@ -825,6 +825,9 @@ export class eveloDB {
 
     if (!fs.existsSync(this.config.directory))
       fs.mkdirSync(this.config.directory, { recursive: true });
+
+    // Proactively check for and migrate old formats if needed
+    this.proactiveMigration();
   }
 
   // ── Path helpers ──────────────────────────────────────────────────────────
@@ -853,6 +856,39 @@ export class eveloDB {
     if (this.handles.size >= this.config.maxHandles) this.evictLRU();
 
     const { dataPath, idxPath } = this.getBsonPaths(collection);
+
+    // AUTO-MIGRATION FROM OLD BSON FORMAT
+    // If index file is missing but data file exists, check if it's the old single-doc format.
+    if (!fs.existsSync(idxPath) && fs.existsSync(dataPath)) {
+      const oldRecords = this.readOldBson(dataPath);
+      if (oldRecords.length > 0) {
+        // Backup the old format files
+        const bakSuffix = '.old_format_bak';
+        fs.renameSync(dataPath, dataPath + bakSuffix);
+        const { name, extension } = this.splitFilePath(dataPath);
+        let i = 1;
+        while (fs.existsSync(`${name} ${i}${extension}`)) {
+          fs.renameSync(`${name} ${i}${extension}`, `${name} ${i}${extension}.bak`);
+          i++;
+        }
+
+        const handle: CollectionHandle = {
+          store: new BSONPageStore(dataPath),
+          index: new PersistedBTree(idxPath, 128),
+          lastAccess: Date.now(),
+        };
+        const pk = this.pkName();
+        for (const doc of oldRecords) {
+          const { offset, len } = handle.store.append(doc);
+          const key = String(doc[pk] ?? '');
+          if (key) handle.index.insert({ key, offset, len });
+        }
+        handle.index.flush();
+        this.handles.set(collection, handle);
+        return handle;
+      }
+    }
+
     const handle: CollectionHandle = {
       store: new BSONPageStore(dataPath),
       index: new PersistedBTree(idxPath, 128),
@@ -860,8 +896,7 @@ export class eveloDB {
     };
     this.handles.set(collection, handle);
 
-    // FIX: If index file is missing but data file exists and has data, rebuild the index.
-    // This allows migration from older eveloDB versions that didn't use .bidx files.
+    // FIX: If index file is missing but data file exists and has data (new format), rebuild the index.
     if (!fs.existsSync(idxPath) && fs.existsSync(dataPath) && handle.store.getFileSize() > 0) {
       const pk = this.pkName();
       for (const { offset, len, doc } of handle.store.scan()) {
@@ -949,6 +984,76 @@ export class eveloDB {
     // Atomic write via tmp + rename
     fs.writeFileSync(tmp, content);
     fs.renameSync(tmp, p);
+  }
+
+  // ── Old BSON migration helpers ────────────────────────────────────────────
+
+  private splitFilePath(filePath: string): { name: string; extension: string } {
+    const lastDotIndex = filePath.lastIndexOf('.');
+    if (lastDotIndex === -1) return { name: filePath, extension: '' };
+    return {
+      name: filePath.substring(0, lastDotIndex),
+      extension: filePath.substring(lastDotIndex),
+    };
+  }
+
+  private readOldBson(filePath: string): Record<string, unknown>[] {
+    if (!fs.existsSync(filePath)) return [];
+    try {
+      const data = fs.readFileSync(filePath);
+      // Old eveloDB BSON format was a single BSON document: { db: [...] }
+      const decoded = BSON.deserialize(data);
+      if (decoded && Array.isArray(decoded.db)) {
+        const records = decoded.db as Record<string, unknown>[];
+        // Handle old chunked format
+        const { name, extension } = this.splitFilePath(filePath);
+        let i = 1;
+        while (true) {
+          const chunkPath = `${name} ${i}${extension}`;
+          if (fs.existsSync(chunkPath)) {
+            try {
+              const chunkDecoded = BSON.deserialize(fs.readFileSync(chunkPath));
+              if (chunkDecoded && Array.isArray(chunkDecoded.db)) {
+                records.push(...(chunkDecoded.db as Record<string, unknown>[]));
+              }
+            } catch { break; }
+            i++;
+          } else break;
+        }
+        return records;
+      }
+    } catch { /* Not an old format BSON file */ }
+    return [];
+  }
+
+  // ── Proactive Migration ───────────────────────────────────────────────────
+
+  private proactiveMigration(): void {
+    // Proactive migration is primarily for BSON format transitions.
+    if (this.config.encode !== 'bson') return;
+    if (!fs.existsSync(this.config.directory)) return;
+
+    try {
+      const files = fs.readdirSync(this.config.directory);
+      const ext = `.${this.config.extension}`;
+      for (const file of files) {
+        if (file.endsWith(ext)) {
+          const collection = path.basename(file, ext);
+          const { idxPath } = this.getBsonPaths(collection);
+          // If the .bidx file is missing, getHandle() will detect if it's 
+          // an old-format BSON file and migrate it automatically.
+          if (!fs.existsSync(idxPath)) {
+            try {
+              this.getHandle(collection);
+            } catch (err) {
+              console.warn(`[eveloDB] Proactive migration failed for "${collection}":`, err);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[eveloDB] Failed to scan for proactive migration:', err);
+    }
   }
 
   // ── Condition matching ────────────────────────────────────────────────────
@@ -1551,14 +1656,19 @@ export class eveloDB {
       const toPath = path.join(toDir, `${name}.${toExt}`);
 
       try {
-        let records: Record<string, unknown>[];
+        let records: Record<string, unknown>[] = [];
 
         if (fromEncode === 'bson') {
-          const tmpStore = new BSONPageStore(fromPath);
-          const tmpIdx = new PersistedBTree(fromPath + '.bidx', 128);
-          const entries = tmpIdx.allEntries();
-          records = entries.map(e => tmpStore.read(e.offset, e.len)).filter(Boolean) as Record<string, unknown>[];
-          tmpStore.close();
+          // Check for old BSON format first
+          records = this.readOldBson(fromPath);
+          if (records.length === 0 && fs.existsSync(fromPath)) {
+            // New BSON format migration
+            const tmpStore = new BSONPageStore(fromPath);
+            const tmpIdx = new PersistedBTree(fromPath + '.bidx', 128);
+            const entries = tmpIdx.allEntries();
+            records = entries.map(e => tmpStore.read(e.offset, e.len)).filter(Boolean) as Record<string, unknown>[];
+            tmpStore.close();
+          }
         } else {
           const raw = fs.readFileSync(fromPath, 'utf8');
           records = (from.encryption
