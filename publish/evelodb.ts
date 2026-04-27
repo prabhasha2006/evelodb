@@ -1425,13 +1425,42 @@ export class eveloDB {
   }
 
   writeData(collection: string, data: unknown): WriteResult {
-    return this.inject(collection, data);
+    if (!collection) return { err: 'collection required!' };
+    if (this.config.encode === 'bson') return { err: 'writeData() not supported in BSON mode' };
+
+    try {
+      const p = this.getJsonPath(collection);
+      const tmp = p + '.tmp';
+      const content = this.config.encryption
+        ? this.encryptData(data) as string
+        : (typeof data === 'string' ? data : JSON.stringify(data, null, this.config.tabspace));
+      fs.writeFileSync(tmp, content);
+      fs.renameSync(tmp, p);
+      return { success: true };
+    } catch (err) {
+      return { err: (err as Error).message };
+    }
   }
 
   readData(collection: string): unknown {
     if (!collection) return { err: 'collection required!' };
     if (this.config.encode === 'bson') return this.bsonAll(collection);
-    return this.readJson(collection);
+
+    const p = this.getJsonPath(collection);
+    if (!fs.existsSync(p)) return null;
+
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const decrypted = this.config.encryption ? this.decryptData(raw) : raw;
+      if (typeof decrypted !== 'string') return decrypted;
+      try {
+        return JSON.parse(decrypted);
+      } catch {
+        return decrypted;
+      }
+    } catch {
+      return null;
+    }
   }
 
   // ── Config Migration ──────────────────────────────────────────────────────

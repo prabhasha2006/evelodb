@@ -1,9 +1,9 @@
 import EveDB, { type EveloDBConfig } from "evelodb";
 
 const config: EveloDBConfig = {
-    extension: "db",
+    extension: "json",
     tabspace: 3,
-    encode: "bson",
+    encode: "json",
     encryption: null,
     encryptionKey: null,
     noRepeat: false,

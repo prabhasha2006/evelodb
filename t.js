@@ -14,5 +14,5 @@ const config = {
 
 const db = new EveloDB(config);
 
-const b = db.get("cdn").count()
+const b = db.readData("cdn")
 console.log(b);
