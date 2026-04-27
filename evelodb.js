@@ -1,1338 +1,645 @@
-const fs = require('fs');
-const { encrypt, decrypt, generateKey } = require('./encryption');
-const { BSON, ObjectId } = require('bson');
-const { GoogleGenAI } = require("@google/genai");
-const imageProcess = require('./imageProcess');
-const path = require('path');
-
-/**
- * @typedef {Object} EveloDBConfig
- * @property {string} [directory='./evelodatabase'] - Directory to store collections.
- * @property {string} [extension='json'] - File extension to use.
- * @property {number} [tabspace=3] - Number of spaces for JSON formatting.
- * @property {'json'|'bson'} [encode='json'] - Encoding type.
- * @property {string|null} [encryption=null] - Encryption algorithm if any.
- * @property {string|null} [encryptionKey=null] - Encryption key in hex.
- * @property {boolean} [noRepeat=false] - Prevent duplicate records.
- * @property {boolean|string} [autoPrimaryKey=true] - Enable or name auto-generated primary key.
- * @property {boolean} [objectId=false] - Use BSON ObjectId for IDs if encoding is BSON.
- */
-
-/**
- * @class BTreeNode
- * @classdesc Node used internally by BTree.
- * @property {Array<[any, any]>} keys - Stored keys and their values.
- * @property {Array<BTreeNode>} children - Child nodes.
- * @property {boolean} isLeaf - Whether node is leaf.
- */
-
-/**
- * @class BTree
- * @classdesc Simple B-Tree for indexing token-based values.
- * @param {number} order - Maximum number of keys per node.
- */
-
-/**
- * @class QueryResult
- * @classdesc Encapsulates results returned from find/search operations.
- * @param {Array} data - Array of items.
- * @method getList(offset, limit) - Returns a slice of data.
- * @method count() - Returns number of items.
- * @method sort(compareFn) - Returns sorted QueryResult.
- * @method all() - Returns all items.
- */
-
-/**
- * @class eveloDB
- * @classdesc Main database class for EveloDB.
- * @param {EveloDBConfig} [config={}] - Configuration options.
- */
-
-/**
- * @function deepCompare
- * @description Recursively compares two objects or arrays for equality.
- * @param {any} obj1
- * @param {any} obj2
- * @returns {boolean}
- */
-
-/**
- * @function encrypt
- * @param {any} data
- * @param {string} algorithm
- * @param {string} key
- * @returns {string|Buffer}
- */
-
-/**
- * @function decrypt
- * @param {any} data
- * @param {string} algorithm
- * @param {string} key
- * @returns {any}
- */
-
-/**
- * @typedef {Object} ReadImageConfig
- * @property {boolean} [returnBase64=true] - Return base64 string.
- * @property {number} [quality=1] - Image quality from 0.1 to 1.
- * @property {number} [pixels=0] - Resize pixels (0 to keep original size).
- * @property {boolean} [blackAndWhite=false] - Convert to grayscale.
- * @property {boolean} [mirror=false] - Mirror image horizontally.
- * @property {boolean} [upToDown=false] - Flip image vertically.
- * @property {boolean} [invert=false] - Invert colors.
- * @property {number} [brightness=1] - Brightness multiplier.
- * @property {number} [contrast=1] - Contrast multiplier.
- * @property {number|null} [maxWidth=null] - Max width in pixels.
- * @property {number|null} [maxHeight=null] - Max height in pixels.
- */
-
-/**
- * @typedef {Object} AnalyseResponse
- * @property {Array<number>} indexes - Matching indexes in data array.
- * @property {string} reason - Reasoning for selection.
- * @property {string} message - Additional insight message.
- * @property {Array<any>} data - Actual items from data array.
- */
-
-// Default configuration
+import * as fs from 'fs';
+import { encrypt, decrypt, generateKey } from './encryption.js';
+import { BSON, ObjectId } from 'bson';
+import { GoogleGenAI } from '@google/genai';
+import imageProcess from './imageProcess.js';
+import * as path from 'path';
+// ─── Default Config ────────────────────────────────────────────────────────────
 const defaultConfig = {
     directory: './evelodatabase',
     extension: 'json',
     tabspace: 3,
-    encode: 'json', // json, bson
+    encode: 'json',
     encryption: null,
     encryptionKey: null,
     noRepeat: false,
     autoPrimaryKey: true,
-    objectId: false
-}
-
-// Deep comparison function
+    objectId: false,
+};
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 function deepCompare(obj1, obj2) {
-    if (obj1 === obj2) return true;
-    if (obj1 === null || obj2 === null || typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+    if (obj1 === obj2)
+        return true;
+    if (obj1 === null || obj2 === null || typeof obj1 !== 'object' || typeof obj2 !== 'object')
         return obj1 === obj2;
-    }
-
     const isArr1 = Array.isArray(obj1);
     const isArr2 = Array.isArray(obj2);
-    if (isArr1 !== isArr2) return false;
-
-    if (isArr1) {
-        if (obj1.length !== obj2.length) return false;
-        for (let i = 0; i < obj1.length; i++) {
-            if (!deepCompare(obj1[i], obj2[i])) return false;
-        }
-        return true;
-    } else {
-        const keys1 = Object.keys(obj1);
-        const keys2 = Object.keys(obj2);
-        if (keys1.length !== keys2.length) return false;
-        for (let key of keys1) {
-            if (!Object.prototype.hasOwnProperty.call(obj2, key) || !deepCompare(obj1[key], obj2[key])) return false;
-        }
+    if (isArr1 !== isArr2)
+        return false;
+    if (isArr1 && Array.isArray(obj2)) {
+        if (obj1.length !== obj2.length)
+            return false;
+        for (let i = 0; i < obj1.length; i++)
+            if (!deepCompare(obj1[i], obj2[i]))
+                return false;
         return true;
     }
+    const o1 = obj1;
+    const o2 = obj2;
+    const keys1 = Object.keys(o1);
+    const keys2 = Object.keys(o2);
+    if (keys1.length !== keys2.length)
+        return false;
+    for (const key of keys1)
+        if (!Object.prototype.hasOwnProperty.call(o2, key) || !deepCompare(o1[key], o2[key]))
+            return false;
+    return true;
 }
-
-// B-Tree Node class
-class BTreeNode {
+class PBTreeNode {
+    entries;
+    children;
+    isLeaf;
     constructor(isLeaf) {
-        this.keys = [];
+        this.entries = [];
         this.children = [];
         this.isLeaf = isLeaf;
     }
 }
-
-// B-Tree class
-class BTree {
-    constructor(order) {
+class PersistedBTree {
+    order; // max keys per node = order - 1
+    root;
+    idxPath;
+    dirty;
+    constructor(idxPath, order = 128) {
         this.order = order;
-        this.root = new BTreeNode(true);
+        this.idxPath = idxPath;
+        this.dirty = false;
+        this.root = this.load();
     }
-
-    insert(key, value) {
-        let root = this.root;
-        if (root.keys.length === this.order - 1) {
-            let newRoot = new BTreeNode(false);
+    // ── Serialization ────────────────────────────────────────────────────────
+    serializeNode(node, buf) {
+        buf.push(node.isLeaf ? 1 : 0);
+        // keyCount (4 bytes)
+        const kc = node.entries.length;
+        buf.push((kc >> 24) & 0xff, (kc >> 16) & 0xff, (kc >> 8) & 0xff, kc & 0xff);
+        for (const e of node.entries) {
+            const keyBuf = Buffer.from(e.key, 'utf8');
+            const kl = keyBuf.length;
+            // keyLen (2 bytes)
+            buf.push((kl >> 8) & 0xff, kl & 0xff);
+            // key bytes
+            for (let i = 0; i < kl; i++)
+                buf.push(keyBuf[i]);
+            // offset (8 bytes, BigInt-safe via two 32-bit halves)
+            const hi = Math.floor(e.offset / 0x100000000);
+            const lo = e.offset >>> 0;
+            buf.push((hi >> 24) & 0xff, (hi >> 16) & 0xff, (hi >> 8) & 0xff, hi & 0xff, (lo >> 24) & 0xff, (lo >> 16) & 0xff, (lo >> 8) & 0xff, lo & 0xff);
+            // len (4 bytes)
+            buf.push((e.len >> 24) & 0xff, (e.len >> 16) & 0xff, (e.len >> 8) & 0xff, e.len & 0xff);
+        }
+        // childCount (4 bytes)
+        const cc = node.children.length;
+        buf.push((cc >> 24) & 0xff, (cc >> 16) & 0xff, (cc >> 8) & 0xff, cc & 0xff);
+        for (const child of node.children)
+            this.serializeNode(child, buf);
+    }
+    deserializeNode(buf, pos) {
+        const isLeaf = buf[pos.offset++] === 1;
+        const node = new PBTreeNode(isLeaf);
+        const kc = (buf[pos.offset] << 24) | (buf[pos.offset + 1] << 16) |
+            (buf[pos.offset + 2] << 8) | buf[pos.offset + 3];
+        pos.offset += 4;
+        for (let i = 0; i < kc; i++) {
+            const kl = (buf[pos.offset] << 8) | buf[pos.offset + 1];
+            pos.offset += 2;
+            const key = buf.slice(pos.offset, pos.offset + kl).toString('utf8');
+            pos.offset += kl;
+            const hi = (buf[pos.offset] * 0x1000000) +
+                ((buf[pos.offset + 1] << 16) | (buf[pos.offset + 2] << 8) | buf[pos.offset + 3]);
+            const lo = (buf[pos.offset + 4] * 0x1000000) +
+                ((buf[pos.offset + 5] << 16) | (buf[pos.offset + 6] << 8) | buf[pos.offset + 7]);
+            const offset = hi * 0x100000000 + lo;
+            pos.offset += 8;
+            const len = (buf[pos.offset] << 24) | (buf[pos.offset + 1] << 16) |
+                (buf[pos.offset + 2] << 8) | buf[pos.offset + 3];
+            pos.offset += 4;
+            node.entries.push({ key, offset, len });
+        }
+        const cc = (buf[pos.offset] << 24) | (buf[pos.offset + 1] << 16) |
+            (buf[pos.offset + 2] << 8) | buf[pos.offset + 3];
+        pos.offset += 4;
+        for (let i = 0; i < cc; i++)
+            node.children.push(this.deserializeNode(buf, pos));
+        return node;
+    }
+    // ── Disk I/O ─────────────────────────────────────────────────────────────
+    load() {
+        if (!fs.existsSync(this.idxPath))
+            return new PBTreeNode(true);
+        try {
+            const buf = fs.readFileSync(this.idxPath);
+            if (buf.length < 8)
+                return new PBTreeNode(true);
+            const pos = { offset: 0 };
+            // read order (4 bytes)
+            this.order = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+            pos.offset = 4;
+            return this.deserializeNode(buf, pos);
+        }
+        catch {
+            return new PBTreeNode(true);
+        }
+    }
+    flush() {
+        if (!this.dirty)
+            return;
+        const arr = [];
+        // write order (4 bytes)
+        arr.push((this.order >> 24) & 0xff, (this.order >> 16) & 0xff, (this.order >> 8) & 0xff, this.order & 0xff);
+        this.serializeNode(this.root, arr);
+        fs.writeFileSync(this.idxPath, Buffer.from(arr));
+        this.dirty = false;
+    }
+    // ── Core B-Tree ops ───────────────────────────────────────────────────────
+    find(key) {
+        return this.findInNode(this.root, key);
+    }
+    findInNode(node, key) {
+        let lo = 0, hi = node.entries.length - 1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >>> 1;
+            const cmp = node.entries[mid].key.localeCompare(key);
+            if (cmp === 0)
+                return node.entries[mid];
+            if (cmp < 0)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
+        }
+        if (node.isLeaf)
+            return null;
+        return this.findInNode(node.children[lo], key);
+    }
+    insert(entry) {
+        this.dirty = true;
+        const root = this.root;
+        if (root.entries.length === this.order - 1) {
+            const newRoot = new PBTreeNode(false);
             newRoot.children.push(root);
             this.splitChild(newRoot, 0);
             this.root = newRoot;
         }
-        this.insertNonFull(this.root, [key, value]);
+        this.insertNonFull(this.root, entry);
     }
-
-    insertNonFull(node, keyValue) {
-        let i = node.keys.length - 1;
-        if (node.isLeaf) {
-            node.keys.push(null);
-            while (i >= 0 && keyValue[0] < node.keys[i][0]) {
-                node.keys[i + 1] = node.keys[i];
-                i--;
-            }
-            node.keys[i + 1] = keyValue;
-        } else {
-            while (i >= 0 && keyValue[0] < node.keys[i][0]) {
-                i--;
-            }
-            i++;
-            if (node.children[i].keys.length === this.order - 1) {
-                this.splitChild(node, i);
-                if (keyValue[0] > node.keys[i][0]) {
-                    i++;
-                }
-            }
-            this.insertNonFull(node.children[i], keyValue);
-        }
+    update(entry) {
+        this.dirty = true;
+        this.updateInNode(this.root, entry);
     }
-
-    splitChild(node, i) {
-        let order = this.order;
-        let child = node.children[i];
-        let newNode = new BTreeNode(child.isLeaf);
-        node.keys.splice(i, 0, child.keys[Math.floor(order / 2)]);
-        node.children.splice(i + 1, 0, newNode);
-        newNode.keys = child.keys.splice(Math.floor(order / 2) + 1);
-        if (!child.isLeaf) {
-            newNode.children = child.children.splice(Math.floor(order / 2) + 1);
-        }
-    }
-
-    traverse(node) {
-        let result = [];
-        for (let i = 0; i < node.keys.length; i++) {
-            if (!node.isLeaf) {
-                result = result.concat(this.traverse(node.children[i]));
-            }
-            result.push(node.keys[i][1]);
-        }
-        if (!node.isLeaf && node.children.length > node.keys.length) {
-            result = result.concat(this.traverse(node.children[node.keys.length]));
-        }
-        return result;
-    }
-}
-
-class QueryResult {
-    constructor(data, err = undefined) {
-        if (err) {
-            this.err = err;
-            this.data = [];
-        } else {
-            this.data = Array.isArray(data) ? data : [];
-        }
-    }
-
-    /**
-     * @param {number} offset - Starting index.
-     * @param {number} limit - Number of items to return.
-     */
-    getList(offset = 0, limit = 10) {
-        if (this.err) return { err: this.err };
-        return this.data.slice(offset, offset + limit);
-    }
-
-    count() {
-        if (this.err) return { err: this.err };
-        return this.data.length;
-    }
-
-    /**
-     * @param {function} compareFn - Comparison function.
-     * @returns {QueryResult}
-     */
-    sort(compareFn) {
-        if (this.err) return this;
-        return new QueryResult([...this.data].sort(compareFn));
-    }
-
-    all() {
-        if (this.err) return { err: this.err };
-        return this.data;
-    }
-}
-
-// eveloDB class
-
-/**
- * @class eveloDB
- */
-class eveloDB {
-    constructor(config = {}) {
-        this.config = { ...defaultConfig, ...config };
-
-        if (this.config.encode === 'bson' && this.config.encryption && this.config.encryptionKey) {
-            throw new Error('BSON encoding does not support encryption. Please set "encryption" and "encryptionKey" to null or use "json" encoding.');
-        }
-
-        if (this.config.encode === 'bson') {
-            if (!config.extension) {
-                this.config.extension = 'bson'; // Default extension for BSON
-            }
-            this.config.tabspace = 0; // BSON does not use tabspace
-            this.config.encryption = null; // BSON does not support encryption
-            this.config.encryptionKey = null; // BSON does not support encryption
-        }
-
-        // Validate encryption config
-        if (this.config.encryption) {
-            const key = this.config.encryptionKey;
-            const algorithm = this.config.encryption;
-
-            if (!key) {
-                throw new Error('Encryption key required when encryption is enabled');
-            }
-
-            const keyLengths = {
-                'aes-128-cbc': 32, // 16 bytes = 32 hex characters
-                'aes-192-cbc': 48, // 24 bytes = 48 hex characters
-                'aes-256-cbc': 64, // 32 bytes = 64 hex characters
-                'aes-128-gcm': 32, // 16 bytes = 32 hex characters
-                'aes-256-gcm': 64, // 32 bytes = 64 hex characters
-            }
-
-            const expectedLength = keyLengths[algorithm];
-
-            if (!expectedLength) {
-                throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
-            }
-
-            if (key.length !== expectedLength) {
-                throw new Error(`${algorithm.toUpperCase()} requires a ${expectedLength}-character hex key (${expectedLength / 2} bytes)`);
-            }
-        }
-
-        this.btree = new BTree(3);
-        if (!fs.existsSync(this.config.directory)) {
-            fs.mkdirSync(this.config.directory, { recursive: true });
-        }
-    }
-
-    // Encryption/decryption methods
-    encrypt(data) {
-        if (this.config.encode === 'bson') {
-            return data
-        }
-        return encrypt(
-            data,
-            this.config.encryption,
-            this.config.encryptionKey
-        );
-    }
-
-    decrypt(data) {
-        if (this.config.encode === 'bson') {
-            return data
-        }
-        return decrypt(
-            data,
-            this.config.encryption,
-            this.config.encryptionKey
-        );
-    }
-
-    encodeData(data) {
-        if (this.config.encode === 'bson') {
-            try {
-                const obj = { db: data };
-                return BSON.serialize(obj);
-            } catch (error) {
-                if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
-                    // Fallback to JSON for very large objects that exceed BSON buffer limits
-                    console.warn('BSON serialization failed, falling back to JSON for large object');
-                    return JSON.stringify(data, null, this.config.tabspace);
-                }
-                throw error;
-            }
-        }
-        if (this.config.encode === 'json') {
-            return JSON.stringify(data, null, this.config.tabspace);
-        }
-        return JSON.stringify(data, null, this.config.tabspace);
-    }
-
-    decodeData(data) {
-        if (this.config.encode === 'bson') {
-            try {
-                const { db } = BSON.deserialize(data);
-                return db;
-            } catch (error) {
-                // If BSON deserialization fails, try JSON (for fallback cases)
-                try {
-                    return JSON.parse(data.toString('utf8'));
-                } catch (jsonError) {
-                    throw new Error(`Failed to decode data: ${error.message}, ${jsonError.message}`);
-                }
-            }
-        }
-        if (this.config.encode === 'json') {
-            return JSON.parse(data.toString('utf8'));
-        }
-        return JSON.parse(data.toString('utf8'));
-    }
-
-    // More accurate size estimation that handles BSON limitations
-    getSafeBsonSize(data) {
-        if (this.config.encode !== 'bson') {
-            return Buffer.from(JSON.stringify(data)).length;
-        }
-
-        try {
-            const obj = { db: data };
-            return BSON.serialize(obj).length;
-        } catch (error) {
-            if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
-                // If BSON serialization fails, use JSON size as fallback
-                return Buffer.from(JSON.stringify(data)).length;
-            }
-            throw error;
-        }
-    }
-
-    // Helper to split file path into name and extension
-    splitFilePath(filePath) {
-        const lastDotIndex = filePath.lastIndexOf('.');
-        if (lastDotIndex === -1) {
-            return { name: filePath, extension: '' };
-        }
-        return {
-            name: filePath.substring(0, lastDotIndex),
-            extension: filePath.substring(lastDotIndex)
-        };
-    }
-
-    // Helper to generate chunk file names
-    getChunkFileName(baseFilePath, chunkIndex) {
-        const { name, extension } = this.splitFilePath(baseFilePath);
-        if (chunkIndex === 0) {
-            return baseFilePath; // Main file
-        }
-        return `${name} ${chunkIndex}${extension}`;
-    }
-
-    writeFileData(filePath, data) {
-        // If not BSON or data is not an array, use normal storage
-        if (this.config.encode !== 'bson' || !Array.isArray(data)) {
-            const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
-            fs.writeFileSync(filePath, encodedData);
-
-            // Clean up any existing chunk files
-            this.cleanupChunkFiles(filePath);
-            return true;
-        }
-
-        // If data is not an array, use normal storage
-        if (!Array.isArray(data)) {
-            const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
-            fs.writeFileSync(filePath, encodedData);
-            this.cleanupChunkFiles(filePath);
-            return true;
-        }
-
-        const MAX_SIZE = 10000000; // Reduced to 10MB for safety margin
-
-        // Check if array needs splitting
-        const totalSize = this.getSafeBsonSize(data);
-
-        if (totalSize <= MAX_SIZE) {
-            try {
-                // Try to store as single file
-                const encodedData = this.config.encryption ? this.encrypt(data) : this.encodeData(data);
-                fs.writeFileSync(filePath, encodedData);
-                this.cleanupChunkFiles(filePath);
+    updateInNode(node, entry) {
+        let lo = 0, hi = node.entries.length - 1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >>> 1;
+            const cmp = node.entries[mid].key.localeCompare(entry.key);
+            if (cmp === 0) {
+                node.entries[mid] = entry;
                 return true;
-            } catch (error) {
-                if (error.code === 'ERR_OUT_OF_RANGE' || error.message.includes('out of range')) {
-                    // If single file fails due to size, proceed with chunking
-                    console.warn('Single file storage failed, proceeding with chunking');
-                } else {
-                    throw error;
-                }
             }
+            if (cmp < 0)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
         }
-
-        // Split array into smaller, safer chunks
-        const chunks = [];
-        let currentChunk = [];
-        let currentSize = 0;
-
-        for (const item of data) {
-            const itemSize = this.getSafeBsonSize([item]);
-
-            // Safety check: if a single item is too large, handle it separately
-            if (itemSize > MAX_SIZE) {
-                console.warn(`Single item exceeds maximum size (${itemSize} > ${MAX_SIZE}), storing separately`);
-                if (currentChunk.length > 0) {
-                    chunks.push([...currentChunk]);
-                    currentChunk = [];
-                    currentSize = 0;
-                }
-                chunks.push([item]); // Store oversized item in its own chunk
-                continue;
-            }
-
-            if (currentSize + itemSize > MAX_SIZE && currentChunk.length > 0) {
-                chunks.push([...currentChunk]);
-                currentChunk = [item];
-                currentSize = itemSize;
-            } else {
-                currentChunk.push(item);
-                currentSize += itemSize;
-            }
-        }
-
-        if (currentChunk.length > 0) {
-            chunks.push(currentChunk);
-        }
-
-        console.log(`Splitting data into ${chunks.length} chunks`);
-
-        // Store each chunk in separate files
-        for (let i = 0; i < chunks.length; i++) {
-            const chunkFilePath = this.getChunkFileName(filePath, i);
-            try {
-                const encodedData = this.config.encryption ?
-                    this.encrypt(chunks[i]) :
-                    this.encodeData(chunks[i]);
-                fs.writeFileSync(chunkFilePath, encodedData);
-            } catch (error) {
-                console.error(`Failed to write chunk ${i}:`, error);
-                // Try with even smaller chunk or fallback to JSON
-                if (chunks[i].length > 1) {
-                    console.warn('Retrying with smaller chunk size');
-                    this.writeFileData(chunkFilePath, chunks[i]); // Recursively handle
-                } else {
-                    throw new Error(`Failed to store oversized item: ${error.message}`);
-                }
-            }
-        }
-
-        this.cleanupChunkFiles(filePath, chunks.length);
-        return true;
+        if (node.isLeaf)
+            return false;
+        return this.updateInNode(node.children[lo], entry);
     }
-
-    // Helper to clean up leftover chunk files
-    cleanupChunkFiles(baseFilePath, currentChunkCount = 1) {
-        let chunkIndex = currentChunkCount;
-
-        while (true) {
-            const chunkFilePath = this.getChunkFileName(baseFilePath, chunkIndex);
-            if (fs.existsSync(chunkFilePath)) {
-                try {
-                    fs.unlinkSync(chunkFilePath);
-                    console.log(`Cleaned up leftover chunk: ${chunkFilePath}`);
-                } catch (error) {
-                    console.warn(`Failed to remove chunk file ${chunkFilePath}:`, error);
-                }
-                chunkIndex++;
-            } else {
+    delete(key) {
+        this.dirty = true;
+        this.deleteFromNode(this.root, key);
+        // collapse empty root
+        if (!this.root.isLeaf && this.root.entries.length === 0 && this.root.children.length > 0)
+            this.root = this.root.children[0];
+    }
+    deleteFromNode(node, key) {
+        let lo = 0, hi = node.entries.length - 1, idx = -1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >>> 1;
+            const cmp = node.entries[mid].key.localeCompare(key);
+            if (cmp === 0) {
+                idx = mid;
                 break;
             }
+            if (cmp < 0)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
         }
-    }
-
-    readFileData(filePath) {
-        // Check if main file exists
-        if (!fs.existsSync(filePath)) {
-            return null;
-        }
-
-        // Read main file (chunk 0)
-        let mainData;
-        try {
-            mainData = this.config.encode === 'bson' ?
-                fs.readFileSync(filePath) :
-                fs.readFileSync(filePath, 'utf8');
-        } catch (error) {
-            console.error(`Failed to read main file ${filePath}:`, error);
-            return null;
-        }
-
-        let result;
-        try {
-            result = this.config.encryption ?
-                this.decrypt(mainData) :
-                this.decodeData(mainData);
-        } catch (error) {
-            console.error(`Failed to decode main file ${filePath}:`, error);
-            return null;
-        }
-
-        // If result is not an array, return as is (no chunking needed)
-        if (!Array.isArray(result)) {
-            return result;
-        }
-
-        // Check for chunk files and combine them
-        const combinedData = [...result];
-        let chunkIndex = 1;
-
-        while (true) {
-            const chunkFilePath = this.getChunkFileName(filePath, chunkIndex);
-            if (!fs.existsSync(chunkFilePath)) {
-                break;
+        if (idx !== -1) {
+            if (node.isLeaf) {
+                node.entries.splice(idx, 1);
             }
-
-            try {
-                const chunkData = this.config.encode === 'bson' ?
-                    fs.readFileSync(chunkFilePath) :
-                    fs.readFileSync(chunkFilePath, 'utf8');
-
-                const decodedChunk = this.config.encryption ?
-                    this.decrypt(chunkData) :
-                    this.decodeData(chunkData);
-
-                if (Array.isArray(decodedChunk)) {
-                    combinedData.push(...decodedChunk);
-                }
-                chunkIndex++;
-            } catch (error) {
-                console.warn(`Error reading chunk file ${chunkFilePath}:`, error);
-                break;
-            }
-        }
-
-        return combinedData;
-    }
-
-    // Additional helper to handle very large individual items
-    getFileChunkInfo(filePath) {
-        if (!fs.existsSync(filePath)) {
-            return null;
-        }
-
-        const info = {
-            isChunked: false,
-            chunkCount: 1,
-            totalSize: 0,
-            chunkFiles: [filePath],
-            hasOversizedItems: false
-        };
-
-        // Check main file
-        try {
-            const mainStats = fs.statSync(filePath);
-            info.totalSize = mainStats.size;
-
-            // Check if main file contains JSON fallback data
-            if (this.config.encode === 'bson') {
-                const data = fs.readFileSync(filePath);
-                try {
-                    BSON.deserialize(data);
-                } catch (error) {
-                    info.usesJsonFallback = true;
-                }
-            }
-        } catch (error) {
-            console.warn(`Error getting stats for ${filePath}:`, error);
-        }
-
-        // Check for chunk files
-        let chunkIndex = 1;
-        while (true) {
-            const chunkFilePath = this.getChunkFileName(filePath, chunkIndex);
-            if (fs.existsSync(chunkFilePath)) {
-                info.isChunked = true;
-                info.chunkCount++;
-                info.chunkFiles.push(chunkFilePath);
-
-                try {
-                    const chunkStats = fs.statSync(chunkFilePath);
-                    info.totalSize += chunkStats.size;
-
-                    // Check for oversized single items
-                    if (chunkStats.size > 10000000) { // 10MB
-                        info.hasOversizedItems = true;
-                    }
-                } catch (error) {
-                    console.warn(`Error getting stats for ${chunkFilePath}:`, error);
-                }
-
-                chunkIndex++;
-            } else {
-                break;
-            }
-        }
-
-        return info;
-    }
-
-    /**
-     * @param {number} length
-     * @returns 
-     */
-    generateKey(length) {
-        return generateKey(length);
-    }
-
-    // Helper method to get file path
-    getFilePath(collection) {
-        return `${this.config.directory}/${collection}.${this.config.extension}`;
-    }
-
-    // Database operations
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} data 
-     * @returns 
-     */
-    create(collection, data) {
-        // Validate required parameters
-        if (!collection) return { err: 'Collection name required' };
-        if (collection.includes('/') || collection.includes('\\') || collection.includes('.') || collection.includes(' ')) {
-            return { err: 'Invalid collection name. Avoid special characters and spaces.' };
-        }
-        if (!data || typeof data !== 'object') return { err: 'Valid data object required' };
-
-        const fullPath = this.getFilePath(collection);
-        let db = [];
-
-        // Load existing data if file exists
-        if (fs.existsSync(fullPath)) {
-            db = this.readFileData(fullPath)
-
-            if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
-
-            // Early noRepeat check before modifying data
-            if (this.config.noRepeat) {
-                const isDuplicate = db.some(existingItem => {
-                    // Compare only user-provided fields
-                    return Object.keys(data).every(key => {
-                        // Skip comparison if this is an auto-generated field
-                        if (key === this.config.autoPrimaryKey) return true;
-                        return deepCompare(existingItem[key], data[key]);
-                    }) &&
-                        // Also ensure we're not matching against records missing compared fields
-                        Object.keys(data).every(key => key in existingItem);
-                });
-
-                if (isDuplicate) {
-                    return {
-                        err: 'Duplicate data - record already exists (noRepeat enabled)',
-                        code: 'DUPLICATE_DATA'
-                    };
-                }
-            }
-        }
-
-        // Prepare the new object (after passing noRepeat check)
-        const object = { ...data };
-
-        // Generate a unique ID for the new object
-        let autoPrimaryKeyName;
-        if (this.config.autoPrimaryKey) {
-            autoPrimaryKeyName = (typeof this.config.autoPrimaryKey === 'string' && this.config.autoPrimaryKey.length > 0)
-                ? this.config.autoPrimaryKey
-                : '_id'; // Default key name
-
-            // Only add if the key doesn't already exist in the document
-            if (!object.hasOwnProperty(autoPrimaryKeyName)) {
-                object[autoPrimaryKeyName] = this.generateUniqueId();
-            }
-        }
-
-        // Add to database
-        db.push(object);
-
-        // Write to file
-        this.writeFileData(fullPath, db)
-
-        // Index in B-Tree if token exists
-        if (object.token) {
-            this.btree.insert(object.token, object);
-        }
-
-        return {
-            success: true,
-            ...(autoPrimaryKeyName && object[autoPrimaryKeyName] ? {
-                [autoPrimaryKeyName]: object[autoPrimaryKeyName]
-            } : {})
-        }
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
-    delete(collection, conditions) {
-        if (!collection) return { err: 'collection required!' };
-        if (!conditions) return { err: 'conditions required!' };
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return { err: 404 };
-
-        let db = this.readFileData(fullPath);
-
-        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
-
-        const originalLength = db.length;
-
-        // Filter out matching items
-        const filteredData = db.filter(item => !this.matchesConditions(item, conditions));
-
-        const deletedCount = originalLength - filteredData.length;
-
-        this.writeFileData(fullPath, filteredData);
-
-        return {
-            success: true,
-            deletedCount
-        };
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {any} data 
-     * @returns 
-     */
-    inject(collection, data) {
-        if (!collection) return { err: 'collection required!' };
-        if (!data) return { err: 'data required!' };
-
-        const fullPath = this.getFilePath(collection);
-        this.writeFileData(fullPath, data)
-        return { success: true };
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {any} data 
-     * @returns 
-     */
-    writeData(collection, data) {
-        if (!collection) return { err: 'collection required!' };
-        if (collection.includes('/') || collection.includes('\\') || collection.includes('.') || collection.includes(' ')) {
-            return { err: 'Invalid collection name. Avoid special characters and spaces.' };
-        }
-        if (!data) return { err: 'data required!' };
-
-        const fullPath = this.getFilePath(collection);
-        this.writeFileData(fullPath, data)
-        return { success: true };
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
-    find(collection, conditions) {
-        if (!collection) return new QueryResult(null, 'collection required!');
-        if (!conditions) return new QueryResult(null, 'conditions required!');
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return new QueryResult([]);
-
-        const db = this.readFileData(fullPath);
-        if (!Array.isArray(db)) return new QueryResult(null, 'Collection data is not an array');
-        const results = db.filter(item => this.matchesConditions(item, conditions));
-
-        return new QueryResult(results);
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
-    findOne(collection, conditions) {
-        if (!collection) return { err: 'collection required!' };
-        if (!conditions) return { err: 'conditions required!' };
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return null;
-
-        const db = this.readFileData(fullPath);
-        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
-
-        return db.find(item => this.matchesConditions(item, conditions)) || null;
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions 
-     * @returns 
-     */
-    search(collection, conditions) {
-        if (!collection) return new QueryResult(null, 'collection required!');
-        if (!conditions) return new QueryResult(null, 'conditions required!');
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return new QueryResult([]);
-
-        const db = this.readFileData(fullPath);
-        if (!Array.isArray(db)) return new QueryResult(null, 'Collection data is not an array');
-        const results = db.filter(item => {
-            return Object.entries(conditions).every(([key, value]) => {
-                const field = item[key];
-
-                if (field === undefined || field === null) return false;
-
-                // If value is a regex object
-                if (value && typeof value === 'object' && value.$regex) {
-                    const pattern = value.$regex;
-                    const flags = value.$options || 'i';
-                    const regex = new RegExp(pattern, flags);
-                    return regex.test(field.toString());
-                }
-
-                // Simple substring match (like search)
-                return field.toString().toLowerCase().includes(value.toString().toLowerCase());
-            });
-        });
-
-        return new QueryResult(results);
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
-    get(collection) {
-        if (!collection) return new QueryResult(null, 'collection required!');
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return new QueryResult(undefined);
-
-        const data = this.readFileData(fullPath);
-        if (!Array.isArray(data)) return new QueryResult(null, 'Collection data is not an array');
-
-        return new QueryResult(data);
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
-    readData(collection) {
-        if (!collection) return { err: 'collection required!' };
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return undefined;
-
-        const data = this.readFileData(fullPath);
-
-        return data;
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
-    count(collection) {
-        // 1. First check if collection exists
-        if (!collection) return { success: false, err: 'collection required!' };
-
-        // 2. Get the data
-        const getResult = this.get(collection);
-
-        // Handle array validation error from get()
-        if (getResult && getResult.err) {
-            return {
-                success: false,
-                err: getResult.err
-            };
-        }
-
-        const result = getResult.all();
-
-        // 3. Handle potential errors from get()
-        if (!result) {
-            return {
-                success: false,
-                err: 'Collection not found'
-            }
-        }
-
-        // 4. Validate we got an array
-        if (!Array.isArray(result)) {
-            return {
-                success: false,
-                err: 'Invalid collection data format'
-            }
-        }
-
-        // 5. Return success with count
-        return {
-            success: true,
-            count: result.length
-        }
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} data 
-     * @returns 
-     */
-    check(collection, data) {
-        if (!collection) return { err: 'collection required!' };
-        if (!data) return { err: 'conditions required!' };
-
-        const result = this.find(collection, data);
-        if (result && result.err) return result;
-
-        return result.all().length > 0;
-    }
-
-
-    /**
-     * 
-     * @param {string} collection 
-     * @param {object} conditions
-     * @param {object} newData
-     * @returns 
-     */
-    edit(collection, conditions, newData) {
-        if (!collection) return { err: 'Collection name required' };
-        if (!conditions) return { err: 'Conditions required' };
-        if (!newData) return { err: 'New data required' };
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return { err: 'Collection not found', code: 404 };
-
-        let db = this.readFileData(fullPath);
-        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
-        let editedCount = 0;
-        let duplicateFound = false;
-
-        const updatedDb = db.map(item => {
-            if (this.matchesConditions(item, conditions)) {
-                const updatedItem = { ...item, ...newData };
-
-                if (this.config.noRepeat) {
-                    const isDuplicate = db.some(existingItem => {
-                        if (existingItem[this.config.autoPrimaryKey] && item[this.config.autoPrimaryKey] && existingItem[this.config.autoPrimaryKey] === item[this.config.autoPrimaryKey]) {
-                            return false;
-                        }
-
-                        // Compare entire object
-                        return deepCompare(existingItem, updatedItem);
-                        
-                        /* return Object.keys(newData).every(key => {
-                            if (key === this.config.autoPrimaryKey) return false;
-                            return deepCompare(existingItem[key], updatedItem[key]);
-                        }); */
-                    });
-
-                    if (isDuplicate) {
-                        duplicateFound = true;
-                        return item;
-                    }
-                }
-
-                editedCount++;
-                return updatedItem;
-            }
-
-            return item;
-        });
-
-        if (duplicateFound) {
-            return {
-                err: 'Edit would create duplicate data (noRepeat enabled)',
-                code: 'DUPLICATE_DATA'
-            };
-        }
-
-        if (editedCount === 0) {
-            return { err: 'No matching records found', code: 'NO_MATCH' };
-        }
-
-        this.writeFileData(fullPath, updatedDb);
-        return {
-            success: true,
-            modifiedCount: editedCount
-        };
-    }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
-    drop(collection) {
-        if (!collection) return { err: 'collection required!' };
-
-        const fullPath = this.getFilePath(collection);
-
-        // For BSON encoding, delete all chunk files as well
-        if (this.config.encode === 'bson') {
-            let deletedCount = 0;
-            let chunkIndex = 0;
-
-            // Delete all chunk files (main file + chunks)
-            while (true) {
-                const chunkFilePath = this.getChunkFileName(fullPath, chunkIndex);
-
-                if (fs.existsSync(chunkFilePath)) {
-                    try {
-                        fs.unlinkSync(chunkFilePath);
-                        deletedCount++;
-                        console.log(`Deleted chunk file: ${chunkFilePath}`);
-                    } catch (error) {
-                        console.warn(`Failed to delete chunk file ${chunkFilePath}:`, error);
-                    }
-                    chunkIndex++;
-                } else {
-                    break;
-                }
-            }
-
-            if (deletedCount > 0) {
-                return {
-                    success: true,
-                    deletedCount: deletedCount,
-                    message: `Deleted ${deletedCount} files including chunks`
-                };
-            } else {
-                return { err: 'No files found to delete', code: 404 };
+            else {
+                // replace with in-order predecessor
+                const pred = this.getRightmost(node.children[idx]);
+                node.entries[idx] = pred;
+                this.deleteFromNode(node.children[idx], pred.key);
+                this.fixChild(node, idx);
             }
         }
         else {
-            // For non-BSON, just delete the main file
-            if (fs.existsSync(fullPath)) {
-                fs.unlinkSync(fullPath);
-                return { success: true };
-            } else {
-                return { err: 404 };
+            if (node.isLeaf)
+                return;
+            const ci = lo; // child index
+            this.deleteFromNode(node.children[ci], key);
+            this.fixChild(node, ci);
+        }
+    }
+    getRightmost(node) {
+        if (node.isLeaf)
+            return node.entries[node.entries.length - 1];
+        return this.getRightmost(node.children[node.children.length - 1]);
+    }
+    fixChild(parent, ci) {
+        const minKeys = Math.floor((this.order - 1) / 2);
+        const child = parent.children[ci];
+        if (child.entries.length >= minKeys)
+            return;
+        const leftSib = ci > 0 ? parent.children[ci - 1] : null;
+        const rightSib = ci < parent.children.length - 1 ? parent.children[ci + 1] : null;
+        if (leftSib && leftSib.entries.length > minKeys) {
+            // rotate right
+            child.entries.unshift(parent.entries[ci - 1]);
+            parent.entries[ci - 1] = leftSib.entries.pop();
+            if (!leftSib.isLeaf)
+                child.children.unshift(leftSib.children.pop());
+        }
+        else if (rightSib && rightSib.entries.length > minKeys) {
+            // rotate left
+            child.entries.push(parent.entries[ci]);
+            parent.entries[ci] = rightSib.entries.shift();
+            if (!rightSib.isLeaf)
+                child.children.push(rightSib.children.shift());
+        }
+        else {
+            // merge
+            if (leftSib) {
+                leftSib.entries.push(parent.entries.splice(ci - 1, 1)[0], ...child.entries);
+                if (!child.isLeaf)
+                    leftSib.children.push(...child.children);
+                parent.children.splice(ci, 1);
+            }
+            else if (rightSib) {
+                child.entries.push(parent.entries.splice(ci, 1)[0], ...rightSib.entries);
+                if (!rightSib.isLeaf)
+                    child.children.push(...rightSib.children);
+                parent.children.splice(ci + 1, 1);
             }
         }
     }
-
-    /**
-     * 
-     * @param {string} collection 
-     * @returns 
-     */
-    reset(collection) {
-        return this.drop(collection)
-    }
-
-    /**
-     * 
-     * @param {object} param0 
-     * @returns 
-     */
-    changeConfig({ from, to, collections }) {
-
-        if (this.config.encode !== 'json' && (from.encryption || from.encryptionKey || to.encryption || to.encryptionKey)) {
-            throw new Error('Cannot change encryption settings while encoding is not JSON');
-        }
-
-        const path = require('path');
-        const files = fs.readdirSync(from.directory || this.config.directory);
-        const { encrypt: doEncrypt, decrypt: doDecrypt } = require('./encryption');
-
-        const keyLengths = {
-            'aes-128-cbc': 32,
-            'aes-192-cbc': 48,
-            'aes-256-cbc': 64,
-            'aes-128-gcm': 32,
-            'aes-256-gcm': 64,
-        };
-
-        const validate = (key, algo) => {
-            if (!algo) return;
-            if (!key || key.length !== keyLengths[algo]) {
-                throw new Error(`${algo} requires ${keyLengths[algo]} hex characters`);
+    insertNonFull(node, entry) {
+        let i = node.entries.length - 1;
+        if (node.isLeaf) {
+            node.entries.push(null);
+            while (i >= 0 && entry.key < node.entries[i].key) {
+                node.entries[i + 1] = node.entries[i];
+                i--;
             }
-        };
-
-        validate(from.encryptionKey, from.encryption);
-        validate(to.encryptionKey, to.encryption);
-
-        let successCount = 0, errorCount = 0;
-        const fromExt = from.extension || this.config.extension;
-        const toExt = to.extension || this.config.extension;
-        const fromDir = from.directory || this.config.directory;
-        const toDir = to.directory || this.config.directory;
-
-        // ✅ Create destination directory if it doesn't exist
-        if (!fs.existsSync(toDir)) {
-            fs.mkdirSync(toDir, { recursive: true });
+            node.entries[i + 1] = entry;
         }
-
-        files.forEach(file => {
-            const ext = path.extname(file).slice(1);
-            const name = path.basename(file, '.' + ext);
-            if (ext !== fromExt) return;
-            if (collections && !collections.includes(name)) return;
-
-            const fromPath = path.join(fromDir, file);
-            const toPath = path.join(toDir, `${name}.${toExt}`);
-
-            try {
-                const raw = fs.readFileSync(fromPath, 'utf8');
-                const json = from.encryption
-                    ? doDecrypt(raw, from.encryption, from.encryptionKey)
-                    : JSON.parse(raw);
-
-                const newContent = to.encryption
-                    ? doEncrypt(json, to.encryption, to.encryptionKey)
-                    : JSON.stringify(json, null, 3);
-
-                fs.writeFileSync(toPath, newContent);
-                successCount++;
-
-                // Delete old file if directory or extension changed
-                if (fromPath !== toPath && fs.existsSync(fromPath)) {
-                    fs.unlinkSync(fromPath);
-                }
-            } catch (err) {
-                console.error(`Failed to convert ${file}: ${err.message}`);
-                errorCount++;
+        else {
+            while (i >= 0 && entry.key < node.entries[i].key)
+                i--;
+            i++;
+            if (node.children[i].entries.length === this.order - 1) {
+                this.splitChild(node, i);
+                if (entry.key > node.entries[i].key)
+                    i++;
             }
-        });
-
-        // ✅ Delete fromDir if it's now empty and not same as toDir
-        if (fromDir !== toDir && fs.existsSync(fromDir)) {
-            const remaining = fs.readdirSync(fromDir);
-            if (remaining.length === 0) {
-                fs.rmdirSync(fromDir, { recursive: true });
-            }
+            this.insertNonFull(node.children[i], entry);
         }
-
-        return {
-            success: true,
-            converted: successCount,
-            failed: errorCount
-        };
     }
-
-    /**
-     * Analyzes data based on provided parameters
-     * @param {object} param0 - Configuration object
-     * @param {string} param0.collection - Name of the collection to analyze
-     * @param {object} param0.filter - Filter criteria for the analysis
-     * @param {Array|object} param0.data - Data to be analyzed
-     * @param {object} param0.model - Data model definition
-     * @param {string} param0.apiKey - API key for authentication
-     * @param {string} param0.query - Query string for analysis
-     * @returns {Promise<any>} Result of the analysis
-     */
-    async analyse({ collection, filter, data, model, apiKey, query }) {
-        if (data && !Array.isArray(data)) return { success: false, err: 'Data must be an array' };
-        if (data && collection) return { success: false, err: 'Cannot specify collection when data is provided' };
-        if (filter && typeof filter !== 'object') return { success: false, err: 'Filter must be an object' };
-        if (!model) return { success: false, err: 'Model is required' };
-        if (!apiKey) return { success: false, err: 'API Key is required' };
-        if (!query) return { success: false, err: 'Query is required' };
-        if (query.length > 1024) return { success: false, err: 'Query exceeds maximum length of 1024 characters' };
-
-        var collData = data;
-        if (!collData) {
-            const getResult = this.get(collection);
-            if (getResult && getResult.err) return { success: false, err: getResult.err };
-            collData = getResult.all();
+    splitChild(parent, i) {
+        const mid = Math.floor((this.order - 1) / 2);
+        const child = parent.children[i];
+        const sibling = new PBTreeNode(child.isLeaf);
+        parent.entries.splice(i, 0, child.entries[mid]);
+        parent.children.splice(i + 1, 0, sibling);
+        sibling.entries = child.entries.splice(mid + 1);
+        child.entries.splice(mid);
+        if (!child.isLeaf) {
+            sibling.children = child.children.splice(mid + 1);
         }
-
-        if (filter) {
-            collData = collData.filter(item => this.matchesConditions(item, filter))
-        }
-        if (collData.length == 0) return { success: false, err: 'No matching data found' }
-
-        const genAI = new GoogleGenAI({ apiKey: apiKey })
-        const prompt = `
-    Analyze the following data array according to the specified conditions.
-    Return a JSON response with the exact structure shown in the example.
-
-    Example Response Format:
-    {
-        "indexes": [0, 2, 3],
-        "reason": "These items match the criteria because...",
-        "message": "Additional insights about the selection"
     }
-
-    Data to Analyze:
-    ${JSON.stringify(collData, null, 2)}
-
-    Conditions:
-    ${query}
-
-    Important Rules:
-    1. Only return valid JSON in the specified format
-    2. "indexes" must be array of numbers matching data array indices
-    3. "reason" should explain your selection logic
-    4. Keep the response concise but meaningful
-    `
-
+    // ── Full scan (used by find/filter when no index key given) ───────────────
+    allEntries() {
+        const result = [];
+        this.traverseNode(this.root, result);
+        return result;
+    }
+    traverseNode(node, result) {
+        for (let i = 0; i < node.entries.length; i++) {
+            if (!node.isLeaf)
+                this.traverseNode(node.children[i], result);
+            result.push(node.entries[i]);
+        }
+        if (!node.isLeaf && node.children.length > node.entries.length)
+            this.traverseNode(node.children[node.entries.length], result);
+    }
+}
+// ─── BSON Page Store ───────────────────────────────────────────────────────────
+//
+//  Records are appended to a .bson data file.
+//  Each record:
+//    [4 bytes: BSON doc length]  ← standard BSON prefix, tells us how many bytes to read
+//    [N bytes: BSON document  ]
+//
+//  Deleted / updated records are marked with a tombstone (first byte = 0x00).
+//  The B-Tree index always points to the latest live offset.
+//  A compaction step rewrites the file removing tombstones (triggered manually or at threshold).
+const TOMBSTONE = 0x00;
+class BSONPageStore {
+    dataPath;
+    walPath;
+    fd = null;
+    fileSize = 0;
+    constructor(dataPath) {
+        this.dataPath = dataPath;
+        this.walPath = dataPath + '.wal';
+        this.open();
+        this.replayWAL();
+    }
+    open() {
+        const exists = fs.existsSync(this.dataPath);
+        this.fd = fs.openSync(this.dataPath, exists ? 'r+' : 'w+');
+        this.fileSize = fs.fstatSync(this.fd).size;
+    }
+    close() {
+        if (this.fd !== null) {
+            fs.closeSync(this.fd);
+            this.fd = null;
+        }
+    }
+    // ── WAL ──────────────────────────────────────────────────────────────────
+    // WAL entry: [1 byte: type] [8 bytes: offset] [4 bytes: len] [len bytes: data]
+    // type 0x01 = append, type 0x02 = tombstone
+    writeWAL(type, offset, data) {
+        const entry = Buffer.allocUnsafe(1 + 8 + 4 + data.length);
+        entry[0] = type;
+        // offset as two 32-bit halves
+        const hi = Math.floor(offset / 0x100000000);
+        const lo = offset >>> 0;
+        entry.writeUInt32BE(hi, 1);
+        entry.writeUInt32BE(lo, 5);
+        entry.writeUInt32BE(data.length, 9);
+        data.copy(entry, 13);
+        fs.appendFileSync(this.walPath, entry);
+    }
+    replayWAL() {
+        if (!fs.existsSync(this.walPath))
+            return;
         try {
-            const response = await genAI.models.generateContent({
-                model: model,
-                contents: prompt,
-            });
-            const responseText = response.text
-
-            // Clean the response (remove markdown code blocks if present)
-            const cleanResponse = responseText.replace(/```json|```/g, '').trim()
-
-            // Parse and validate the response
-            const parsedResponse = JSON.parse(cleanResponse);
-
-            if (!parsedResponse.indexes || !Array.isArray(parsedResponse.indexes)) {
-                throw new Error('Invalid response format: missing indexes array')
-            }
-
-            return {
-                success: true,
-                response: {
-                    ...parsedResponse,
-                    data: parsedResponse.indexes.map(index => collData[index])
+            const buf = fs.readFileSync(this.walPath);
+            let pos = 0;
+            while (pos < buf.length) {
+                if (pos + 13 > buf.length)
+                    break;
+                const type = buf[pos++];
+                const hi = buf.readUInt32BE(pos);
+                pos += 4;
+                const lo = buf.readUInt32BE(pos);
+                pos += 4;
+                const offset = hi * 0x100000000 + lo;
+                const len = buf.readUInt32BE(pos);
+                pos += 4;
+                if (pos + len > buf.length)
+                    break;
+                const data = buf.slice(pos, pos + len);
+                pos += len;
+                if (type === 0x01) {
+                    // append: write to data file at offset
+                    if (this.fd !== null) {
+                        fs.writeSync(this.fd, data, 0, data.length, offset);
+                        if (offset + data.length > this.fileSize)
+                            this.fileSize = offset + data.length;
+                    }
                 }
-            };
-
-        } catch (error) {
-            console.error('AI Analysis Error:', error);
-            return {
-                success: false,
-                err: error.message || "Failed to process AI response"
-            };
+                else if (type === 0x02) {
+                    // tombstone
+                    if (this.fd !== null) {
+                        const t = Buffer.from([TOMBSTONE]);
+                        fs.writeSync(this.fd, t, 0, 1, offset + 4); // +4 to skip BSON length prefix
+                    }
+                }
+            }
+        }
+        catch { /* corrupt WAL, ignore */ }
+        // clear WAL after replay
+        try {
+            fs.writeFileSync(this.walPath, '');
+        }
+        catch { /* ignore */ }
+    }
+    // ── Append ───────────────────────────────────────────────────────────────
+    append(doc) {
+        const bsonDoc = BSON.serialize(doc);
+        // 4-byte length prefix (little-endian, same as BSON spec)
+        const lenBuf = Buffer.allocUnsafe(4);
+        lenBuf.writeUInt32LE(bsonDoc.length, 0);
+        const record = Buffer.concat([lenBuf, bsonDoc]);
+        const offset = this.fileSize;
+        this.writeWAL(0x01, offset, record);
+        if (this.fd !== null) {
+            fs.writeSync(this.fd, record, 0, record.length, offset);
+        }
+        this.fileSize += record.length;
+        return { offset, len: record.length };
+    }
+    // ── Read single record ────────────────────────────────────────────────────
+    read(offset, len) {
+        if (this.fd === null || offset + len > this.fileSize)
+            return null;
+        const buf = Buffer.allocUnsafe(len);
+        fs.readSync(this.fd, buf, 0, len, offset);
+        // check tombstone (first byte of BSON doc, which is at buf[4])
+        if (buf[4] === TOMBSTONE)
+            return null;
+        const bsonLen = buf.readUInt32LE(0);
+        const bsonBuf = buf.slice(4, 4 + bsonLen);
+        try {
+            return BSON.deserialize(bsonBuf);
+        }
+        catch {
+            return null;
         }
     }
-
-    rebuildBTree(collection) {
-        if (!collection) return { err: 'collection required!' };
-
-        const fullPath = this.getFilePath(collection);
-        if (!fs.existsSync(fullPath)) return { err: 404 };
-
-        let db = this.readFileData(fullPath)
-        if (!Array.isArray(db)) return { err: 'Collection data is not an array' };
-
-        this.btree = new BTree(3);
-        db.forEach(item => {
-            if (item.token) {
-                this.btree.insert(item.token, item);
-            } else {
-                console.error(`Item is missing a token:`, item);
-            }
-        });
+    // ── Tombstone (soft delete) ───────────────────────────────────────────────
+    tombstone(offset) {
+        const marker = Buffer.from([TOMBSTONE]);
+        this.writeWAL(0x02, offset, marker);
+        if (this.fd !== null) {
+            fs.writeSync(this.fd, marker, 0, 1, offset + 4);
+        }
     }
-
+    // ── Compact ──────────────────────────────────────────────────────────────
+    // Rewrites the data file removing all tombstoned records.
+    // Returns a map of old offset → new offset for index rebuilding.
+    compact(liveEntries) {
+        const tmpPath = this.dataPath + '.tmp';
+        const tmpFd = fs.openSync(tmpPath, 'w');
+        const remap = new Map();
+        let writePos = 0;
+        for (const entry of liveEntries) {
+            const doc = this.read(entry.offset, entry.len);
+            if (!doc)
+                continue;
+            const bsonDoc = BSON.serialize(doc);
+            const lenBuf = Buffer.allocUnsafe(4);
+            lenBuf.writeUInt32LE(bsonDoc.length, 0);
+            const record = Buffer.concat([lenBuf, bsonDoc]);
+            fs.writeSync(tmpFd, record, 0, record.length, writePos);
+            remap.set(entry.offset, { offset: writePos, len: record.length });
+            writePos += record.length;
+        }
+        fs.closeSync(tmpFd);
+        this.close();
+        fs.renameSync(tmpPath, this.dataPath);
+        this.open();
+        return remap;
+    }
+    getFileSize() { return this.fileSize; }
+}
+// ─── QueryResult ───────────────────────────────────────────────────────────────
+export class QueryResult {
+    data;
+    err;
+    constructor(data, err) {
+        if (err) {
+            this.err = err;
+            this.data = [];
+        }
+        else {
+            this.data = Array.isArray(data) ? data : [];
+        }
+    }
+    getList(offset = 0, limit = 10) {
+        if (this.err)
+            return { err: this.err };
+        return this.data.slice(offset, offset + limit);
+    }
+    count() {
+        if (this.err)
+            return { err: this.err };
+        return this.data.length;
+    }
+    sort(compareFn) {
+        if (this.err)
+            return this;
+        return new QueryResult([...this.data].sort(compareFn));
+    }
+    all() {
+        if (this.err)
+            return { err: this.err };
+        return this.data;
+    }
+}
+// ─── eveloDB ───────────────────────────────────────────────────────────────────
+export class eveloDB {
+    config;
+    handles = new Map();
+    constructor(config = {}) {
+        this.config = { ...defaultConfig, ...config };
+        if (this.config.encode === 'bson' && this.config.encryption && this.config.encryptionKey)
+            throw new Error('BSON encoding does not support encryption.');
+        if (this.config.encode === 'bson') {
+            if (!config.extension)
+                this.config.extension = 'bson';
+            this.config.tabspace = 0;
+            this.config.encryption = null;
+            this.config.encryptionKey = null;
+        }
+        if (this.config.encryption) {
+            const key = this.config.encryptionKey;
+            const algorithm = this.config.encryption;
+            if (!key)
+                throw new Error('Encryption key required when encryption is enabled');
+            const keyLengths = {
+                'aes-128-cbc': 32, 'aes-192-cbc': 48, 'aes-256-cbc': 64,
+                'aes-128-gcm': 32, 'aes-256-gcm': 64,
+            };
+            const expectedLength = keyLengths[algorithm];
+            if (!expectedLength)
+                throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+            if (key.length !== expectedLength)
+                throw new Error(`${algorithm.toUpperCase()} requires a ${expectedLength}-character hex key`);
+        }
+        if (!fs.existsSync(this.config.directory))
+            fs.mkdirSync(this.config.directory, { recursive: true });
+    }
+    // ── Collection handle management ──────────────────────────────────────────
+    getHandle(collection) {
+        if (this.handles.has(collection))
+            return this.handles.get(collection);
+        const dataPath = `${this.config.directory}/${collection}.bson`;
+        const idxPath = `${this.config.directory}/${collection}.bidx`;
+        const handle = {
+            store: new BSONPageStore(dataPath),
+            index: new PersistedBTree(idxPath, 128),
+        };
+        this.handles.set(collection, handle);
+        return handle;
+    }
+    flushHandle(collection) {
+        const h = this.handles.get(collection);
+        if (h)
+            h.index.flush();
+    }
+    // Close and flush all open handles (call on process exit)
+    closeAll() {
+        for (const [name, h] of this.handles) {
+            h.index.flush();
+            h.store.close();
+            this.handles.delete(name);
+        }
+    }
+    // ── Primary key helpers ───────────────────────────────────────────────────
+    pkName() {
+        return typeof this.config.autoPrimaryKey === 'string' &&
+            this.config.autoPrimaryKey.length > 0
+            ? this.config.autoPrimaryKey
+            : '_id';
+    }
+    generateUniqueId() {
+        if (this.config.encode === 'bson' && this.config.objectId)
+            return new ObjectId();
+        const timestamp = Date.now().toString(36);
+        const randomStr = Math.random().toString(36).substring(2, 10);
+        return `${timestamp}${randomStr}`;
+    }
+    generateKey(length) { return generateKey(length); }
+    // ── JSON path (unchanged — small, human-readable) ─────────────────────────
+    getJsonPath(collection) {
+        return `${this.config.directory}/${collection}.${this.config.extension}`;
+    }
+    encryptData(data) {
+        return encrypt(data, this.config.encryptionKey, this.config.encryption);
+    }
+    decryptData(data) {
+        return decrypt(data, this.config.encryptionKey, this.config.encryption);
+    }
+    readJson(collection) {
+        const p = this.getJsonPath(collection);
+        if (!fs.existsSync(p))
+            return [];
+        const raw = fs.readFileSync(p, 'utf8');
+        const parsed = this.config.encryption ? this.decryptData(raw) : JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    }
+    writeJson(collection, data) {
+        const p = this.getJsonPath(collection);
+        const content = this.config.encryption
+            ? this.encryptData(data)
+            : JSON.stringify(data, null, this.config.tabspace);
+        fs.writeFileSync(p, content);
+    }
+    // ── Condition matching ────────────────────────────────────────────────────
     matchesConditions(item, conditions) {
         return Object.entries(conditions).every(([key, value]) => {
             const fieldValue = item[key];
-
-            // Handle MongoDB-like operators
             if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 const keys = Object.keys(value);
-                const isOperatorObject = keys.length > 0 && keys.every(k => k.startsWith('$'));
-
-                if (isOperatorObject) {
-                    return Object.entries(value).every(([op, condVal]) => {
+                if (keys.length > 0 && keys.every(k => k.startsWith('$'))) {
+                    const cond = value;
+                    return Object.entries(cond).every(([op, condVal]) => {
                         switch (op) {
                             case '$eq': return deepCompare(fieldValue, condVal);
                             case '$ne': return !deepCompare(fieldValue, condVal);
@@ -1342,161 +649,548 @@ class eveloDB {
                             case '$lte': return fieldValue <= condVal;
                             case '$in': return Array.isArray(condVal) && condVal.includes(fieldValue);
                             case '$nin': return Array.isArray(condVal) && !condVal.includes(fieldValue);
-                            default: return false; // unknown operator
+                            case '$regex': {
+                                const r = new RegExp(condVal, (cond.$options ?? 'i'));
+                                return r.test(String(fieldValue));
+                            }
+                            default: return false;
                         }
                     });
                 }
             }
-
-            // Default deep match
             return deepCompare(fieldValue, value);
         });
     }
-
-    getAllFromBTree() {
-        return this.btree.traverse(this.btree.root);
-    }
-
-    generateUniqueId() {
-        if (this.config.encode === 'bson' && this.config.objectId) {
-            return new ObjectId()//.toString();
+    // ── CRUD — BSON path ──────────────────────────────────────────────────────
+    bsonCreate(collection, data) {
+        const h = this.getHandle(collection);
+        const pk = this.pkName();
+        if (!data[pk])
+            data[pk] = this.generateUniqueId();
+        const key = String(data[pk]);
+        if (this.config.noRepeat) {
+            // noRepeat needs a full scan — acceptable for BSON mode too
+            const all = this.bsonAll(collection);
+            const dup = all.some(item => Object.keys(data).every(k => k === pk || deepCompare(item[k], data[k])));
+            if (dup)
+                return { err: 'Duplicate data (noRepeat enabled)', code: 'DUPLICATE_DATA' };
         }
-        const timestamp = Date.now().toString(36);
-        const randomStr = Math.random().toString(36).substring(2, 10);
-        return `${timestamp}${randomStr}`;
+        const { offset, len } = h.store.append(data);
+        h.index.insert({ key, offset, len });
+        this.flushHandle(collection);
+        return { success: true, [pk]: data[pk] };
     }
-
-    /**
-     * 
-     * @param {string} name 
-     * @param {any} data 
-     * @returns 
-     */
-    writeFile(name, data) {
-        if (!name) return { err: 'File name required' }
-        if (!data) return { err: 'Data required' }
-        if (name.includes('/') || name.includes('\\')) return { err: 'Invalid file name. Avoid special characters.' }
-        if (!Buffer.isBuffer(data)) return { err: 'Data must be a Buffer' }
-
-        if (!fs.existsSync(`${this.config.directory}/files`)) {
-            fs.mkdirSync(`${this.config.directory}/files`, { recursive: true });
+    bsonFindOne(collection, conditions) {
+        const pk = this.pkName();
+        const pkVal = conditions[pk];
+        if (pkVal !== undefined && typeof pkVal !== 'object') {
+            // fast path: direct index lookup
+            const h = this.getHandle(collection);
+            const entry = h.index.find(String(pkVal));
+            if (!entry)
+                return null;
+            const doc = h.store.read(entry.offset, entry.len);
+            if (!doc)
+                return null;
+            return this.matchesConditions(doc, conditions) ? doc : null;
         }
-
-        const filePath = `${this.config.directory}/files/${name}`;
-        try {
-            fs.writeFileSync(filePath, data);
+        // slow path: full scan
+        const all = this.bsonAll(collection);
+        return (all.find(item => this.matchesConditions(item, conditions)) ?? null);
+    }
+    bsonFind(collection, conditions) {
+        const pk = this.pkName();
+        const pkVal = conditions[pk];
+        if (pkVal !== undefined && typeof pkVal !== 'object') {
+            const doc = this.bsonFindOne(collection, conditions);
+            return doc ? [doc] : [];
+        }
+        const all = this.bsonAll(collection);
+        return all.filter(item => this.matchesConditions(item, conditions));
+    }
+    bsonAll(collection) {
+        const h = this.getHandle(collection);
+        const entries = h.index.allEntries();
+        const results = [];
+        for (const e of entries) {
+            const doc = h.store.read(e.offset, e.len);
+            if (doc)
+                results.push(doc);
+        }
+        return results;
+    }
+    bsonDelete(collection, conditions) {
+        const pk = this.pkName();
+        const pkVal = conditions[pk];
+        const h = this.getHandle(collection);
+        let deletedCount = 0;
+        if (pkVal !== undefined && typeof pkVal !== 'object') {
+            // fast path
+            const key = String(pkVal);
+            const entry = h.index.find(key);
+            if (entry) {
+                const doc = h.store.read(entry.offset, entry.len);
+                if (doc && this.matchesConditions(doc, conditions)) {
+                    h.store.tombstone(entry.offset);
+                    h.index.delete(key);
+                    deletedCount = 1;
+                }
+            }
+        }
+        else {
+            // full scan
+            const entries = h.index.allEntries();
+            for (const e of entries) {
+                const doc = h.store.read(e.offset, e.len);
+                if (doc && this.matchesConditions(doc, conditions)) {
+                    h.store.tombstone(e.offset);
+                    h.index.delete(e.key);
+                    deletedCount++;
+                }
+            }
+        }
+        this.flushHandle(collection);
+        return { success: true, deletedCount };
+    }
+    bsonEdit(collection, conditions, newData) {
+        const pk = this.pkName();
+        const h = this.getHandle(collection);
+        let modifiedCount = 0;
+        const toUpdate = this.bsonFind(collection, conditions);
+        if (toUpdate.length === 0)
+            return { err: 'No matching records found', code: 'NO_MATCH' };
+        for (const doc of toUpdate) {
+            const key = String(doc[pk]);
+            const entry = h.index.find(key);
+            if (!entry)
+                continue;
+            const updated = { ...doc, ...newData, [pk]: doc[pk] };
+            if (this.config.noRepeat) {
+                const all = this.bsonAll(collection);
+                const dup = all.some(item => String(item[pk]) !== key && deepCompare(item, updated));
+                if (dup)
+                    continue;
+            }
+            // tombstone old, append new
+            h.store.tombstone(entry.offset);
+            const { offset, len } = h.store.append(updated);
+            h.index.update({ key, offset, len });
+            modifiedCount++;
+        }
+        this.flushHandle(collection);
+        return { success: true, modifiedCount };
+    }
+    bsonDrop(collection) {
+        this.flushHandle(collection);
+        const h = this.handles.get(collection);
+        if (h) {
+            h.store.close();
+            this.handles.delete(collection);
+        }
+        const dataPath = `${this.config.directory}/${collection}.bson`;
+        const idxPath = `${this.config.directory}/${collection}.bidx`;
+        const walPath = `${this.config.directory}/${collection}.bson.wal`;
+        let deleted = 0;
+        for (const p of [dataPath, idxPath, walPath]) {
+            if (fs.existsSync(p)) {
+                fs.unlinkSync(p);
+                deleted++;
+            }
+        }
+        return deleted > 0 ? { success: true, deletedCount: deleted } : { err: 404 };
+    }
+    // ── Compaction (BSON only) ────────────────────────────────────────────────
+    // Call this manually when you want to reclaim disk space from tombstoned records.
+    compact(collection) {
+        if (this.config.encode !== 'bson')
+            return { success: false, err: 'Only available in BSON mode' };
+        const h = this.getHandle(collection);
+        const entries = h.index.allEntries();
+        const remap = h.store.compact(entries);
+        // update index with new offsets
+        for (const entry of entries) {
+            const newPos = remap.get(entry.offset);
+            if (newPos)
+                h.index.update({ key: entry.key, offset: newPos.offset, len: newPos.len });
+            else
+                h.index.delete(entry.key);
+        }
+        this.flushHandle(collection);
+        return { success: true };
+    }
+    // ── Public CRUD ───────────────────────────────────────────────────────────
+    create(collection, data) {
+        if (!collection)
+            return { err: 'Collection name required' };
+        if (/[/\\.\ ]/.test(collection))
+            return { err: 'Invalid collection name' };
+        if (!data || typeof data !== 'object')
+            return { err: 'Valid data object required' };
+        if (this.config.encode === 'bson')
+            return this.bsonCreate(collection, { ...data });
+        // JSON path (unchanged behaviour)
+        const db = this.readJson(collection);
+        const pk = this.pkName();
+        const object = { ...data };
+        if (this.config.noRepeat) {
+            const dup = db.some(existing => Object.keys(data).every(k => k === pk || deepCompare(existing[k], data[k])));
+            if (dup)
+                return { err: 'Duplicate data (noRepeat enabled)', code: 'DUPLICATE_DATA' };
+        }
+        if (!object[pk])
+            object[pk] = this.generateUniqueId();
+        db.push(object);
+        this.writeJson(collection, db);
+        return { success: true, [pk]: object[pk] };
+    }
+    delete(collection, conditions) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (!conditions)
+            return { err: 'conditions required!' };
+        if (this.config.encode === 'bson')
+            return this.bsonDelete(collection, conditions);
+        const p = this.getJsonPath(collection);
+        if (!fs.existsSync(p))
+            return { err: 'Not found', code: 404 };
+        const db = this.readJson(collection);
+        const filtered = db.filter(item => !this.matchesConditions(item, conditions));
+        this.writeJson(collection, filtered);
+        return { success: true, deletedCount: db.length - filtered.length };
+    }
+    find(collection, conditions) {
+        if (!collection)
+            return new QueryResult(null, 'collection required!');
+        if (!conditions)
+            return new QueryResult(null, 'conditions required!');
+        if (this.config.encode === 'bson')
+            return new QueryResult(this.bsonFind(collection, conditions));
+        const db = this.readJson(collection);
+        return new QueryResult(db.filter(item => this.matchesConditions(item, conditions)));
+    }
+    findOne(collection, conditions) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (!conditions)
+            return { err: 'conditions required!' };
+        if (this.config.encode === 'bson')
+            return this.bsonFindOne(collection, conditions) ?? null;
+        const db = this.readJson(collection);
+        return (db.find(item => this.matchesConditions(item, conditions)) ?? null);
+    }
+    get(collection) {
+        if (!collection)
+            return new QueryResult(null, 'collection required!');
+        if (this.config.encode === 'bson')
+            return new QueryResult(this.bsonAll(collection));
+        const data = this.readJson(collection);
+        return new QueryResult(data);
+    }
+    edit(collection, conditions, newData) {
+        if (!collection)
+            return { err: 'Collection name required' };
+        if (!conditions)
+            return { err: 'Conditions required' };
+        if (!newData)
+            return { err: 'New data required' };
+        if (this.config.encode === 'bson')
+            return this.bsonEdit(collection, conditions, newData);
+        const p = this.getJsonPath(collection);
+        if (!fs.existsSync(p))
+            return { err: 'Collection not found', code: 404 };
+        const db = this.readJson(collection);
+        const pk = this.pkName();
+        let editedCount = 0, duplicateFound = false;
+        const updatedDb = db.map(item => {
+            if (!this.matchesConditions(item, conditions))
+                return item;
+            const updated = { ...item, ...newData };
+            if (this.config.noRepeat) {
+                const dup = db.some(e => e[pk] !== item[pk] && deepCompare(e, updated));
+                if (dup) {
+                    duplicateFound = true;
+                    return item;
+                }
+            }
+            editedCount++;
+            return updated;
+        });
+        if (duplicateFound)
+            return { err: 'Edit would create duplicate (noRepeat enabled)', code: 'DUPLICATE_DATA' };
+        if (editedCount === 0)
+            return { err: 'No matching records found', code: 'NO_MATCH' };
+        this.writeJson(collection, updatedDb);
+        return { success: true, modifiedCount: editedCount };
+    }
+    count(collection) {
+        if (!collection)
+            return { success: false, err: 'collection required!' };
+        if (this.config.encode === 'bson') {
+            const h = this.getHandle(collection);
+            return { success: true, count: h.index.allEntries().length };
+        }
+        const db = this.readJson(collection);
+        return { success: true, count: db.length };
+    }
+    check(collection, data) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (!data)
+            return { err: 'conditions required!' };
+        const result = this.find(collection, data);
+        if (result?.err)
+            return { err: result.err };
+        return result.all().length > 0;
+    }
+    search(collection, conditions) {
+        if (!collection)
+            return new QueryResult(null, 'collection required!');
+        if (!conditions)
+            return new QueryResult(null, 'conditions required!');
+        const all = this.config.encode === 'bson'
+            ? this.bsonAll(collection)
+            : this.readJson(collection);
+        const results = all.filter(item => Object.entries(conditions).every(([key, value]) => {
+            const field = item[key];
+            if (field == null)
+                return false;
+            if (value && typeof value === 'object' && value.$regex) {
+                const cond = value;
+                return new RegExp(cond.$regex, cond.$options ?? 'i').test(String(field));
+            }
+            return String(field).toLowerCase().includes(String(value).toLowerCase());
+        }));
+        return new QueryResult(results);
+    }
+    drop(collection) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (this.config.encode === 'bson')
+            return this.bsonDrop(collection);
+        const p = this.getJsonPath(collection);
+        if (fs.existsSync(p)) {
+            fs.unlinkSync(p);
             return { success: true };
-        } catch (error) {
+        }
+        return { err: 404 };
+    }
+    reset(collection) { return this.drop(collection); }
+    inject(collection, data) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (this.config.encode === 'bson')
+            return { err: 'inject() not supported in BSON mode' };
+        fs.writeFileSync(this.getJsonPath(collection), JSON.stringify(data, null, this.config.tabspace));
+        return { success: true };
+    }
+    writeData(collection, data) {
+        return this.inject(collection, data);
+    }
+    readData(collection) {
+        if (!collection)
+            return { err: 'collection required!' };
+        if (this.config.encode === 'bson')
+            return this.bsonAll(collection);
+        return this.readJson(collection);
+    }
+    // ── Config Migration ──────────────────────────────────────────────────────
+    changeConfig({ from, to, collections }) {
+        const keyLengths = {
+            'aes-128-cbc': 32, 'aes-192-cbc': 48, 'aes-256-cbc': 64,
+            'aes-128-gcm': 32, 'aes-256-gcm': 64,
+        };
+        const validate = (key, algo) => {
+            if (!algo)
+                return;
+            if (!key || key.length !== keyLengths[algo])
+                throw new Error(`${algo} requires ${keyLengths[algo]} hex characters`);
+        };
+        validate(from.encryptionKey, from.encryption);
+        validate(to.encryptionKey, to.encryption);
+        const fromDir = from.directory ?? this.config.directory;
+        const toDir = to.directory ?? this.config.directory;
+        const fromExt = from.extension ?? this.config.extension;
+        const toExt = to.extension ?? this.config.extension;
+        if (!fs.existsSync(toDir))
+            fs.mkdirSync(toDir, { recursive: true });
+        const files = fs.readdirSync(fromDir);
+        let successCount = 0, errorCount = 0;
+        files.forEach(file => {
+            const ext = path.extname(file).slice(1);
+            const name = path.basename(file, '.' + ext);
+            if (ext !== fromExt)
+                return;
+            if (collections && !collections.includes(name))
+                return;
+            const fromPath = path.join(fromDir, file);
+            const toPath = path.join(toDir, `${name}.${toExt}`);
+            try {
+                const raw = fs.readFileSync(fromPath, 'utf8');
+                const json = from.encryption
+                    ? decrypt(raw, from.encryptionKey, from.encryption)
+                    : JSON.parse(raw);
+                const newContent = to.encryption
+                    ? encrypt(json, to.encryptionKey, to.encryption)
+                    : JSON.stringify(json, null, 3);
+                fs.writeFileSync(toPath, newContent);
+                successCount++;
+                if (fromPath !== toPath && fs.existsSync(fromPath))
+                    fs.unlinkSync(fromPath);
+            }
+            catch (err) {
+                console.error(`Failed to convert ${file}: ${err.message}`);
+                errorCount++;
+            }
+        });
+        if (fromDir !== toDir && fs.existsSync(fromDir)) {
+            if (fs.readdirSync(fromDir).length === 0)
+                fs.rmdirSync(fromDir, { recursive: true });
+        }
+        return { success: true, converted: successCount, failed: errorCount };
+    }
+    // ── AI Analysis ───────────────────────────────────────────────────────────
+    async analyse({ collection, filter, data, model, apiKey, query, }) {
+        if (data && !Array.isArray(data))
+            return { success: false, err: 'Data must be an array' };
+        if (data && collection)
+            return { success: false, err: 'Cannot specify collection when data is provided' };
+        if (!model)
+            return { success: false, err: 'Model is required' };
+        if (!apiKey)
+            return { success: false, err: 'API Key is required' };
+        if (!query)
+            return { success: false, err: 'Query is required' };
+        if (query.length > 1024)
+            return { success: false, err: 'Query exceeds 1024 characters' };
+        let collData = data ?? [];
+        if (!data) {
+            const getResult = this.get(collection);
+            if (getResult?.err)
+                return { success: false, err: getResult.err };
+            collData = getResult.all();
+        }
+        if (filter)
+            collData = collData.filter(item => this.matchesConditions(item, filter));
+        if (collData.length === 0)
+            return { success: false, err: 'No matching data found' };
+        const genAI = new GoogleGenAI({ apiKey });
+        const prompt = `
+Analyze the following data array according to the specified conditions.
+Return a JSON response with the exact structure shown in the example.
+
+Example Response Format:
+{
+    "indexes": [0, 2, 3],
+    "reason": "These items match the criteria because...",
+    "message": "Additional insights about the selection"
+}
+
+Data to Analyze:
+${JSON.stringify(collData, null, 2)}
+
+Conditions:
+${query}
+
+Important Rules:
+1. Only return valid JSON in the specified format
+2. "indexes" must be array of numbers matching data array indices
+3. "reason" should explain your selection logic
+4. Keep the response concise but meaningful
+`;
+        try {
+            const response = await genAI.models.generateContent({ model, contents: prompt });
+            const cleanResponse = (response.text || '').replace(/```json|```/g, '').trim();
+            const parsed = JSON.parse(cleanResponse);
+            if (!parsed.indexes || !Array.isArray(parsed.indexes))
+                throw new Error('Invalid response format: missing indexes array');
+            return {
+                success: true,
+                response: { ...parsed, data: parsed.indexes.map(i => collData[i]) },
+            };
+        }
+        catch (error) {
+            return { success: false, err: error.message ?? 'Failed to process AI response' };
+        }
+    }
+    // ── File Storage (unchanged) ──────────────────────────────────────────────
+    writeFile(name, data) {
+        if (!name)
+            return { err: 'File name required' };
+        if (!data)
+            return { err: 'Data required' };
+        if (name.includes('/') || name.includes('\\'))
+            return { err: 'Invalid file name' };
+        if (!Buffer.isBuffer(data))
+            return { err: 'Data must be a Buffer' };
+        const filesDir = `${this.config.directory}/files`;
+        if (!fs.existsSync(filesDir))
+            fs.mkdirSync(filesDir, { recursive: true });
+        try {
+            fs.writeFileSync(`${filesDir}/${name}`, data);
+            return { success: true };
+        }
+        catch (error) {
             return { err: `Failed to write file: ${error.message}` };
         }
     }
-
     allFiles() {
-        if (!fs.existsSync(`${this.config.directory}/files`)) return []
-        const files = fs.readdirSync(`${this.config.directory}/files`);
-        return files
+        const filesDir = `${this.config.directory}/files`;
+        if (!fs.existsSync(filesDir))
+            return [];
+        return fs.readdirSync(filesDir);
     }
-
-    /**
-     * 
-     * @param {string} name 
-     * @returns 
-     */
     readFile(name) {
-        if (!name) return { err: 'File name required' };
-
-        if (!fs.existsSync(`${this.config.directory}/files`)) return { err: 'Files not found', code: 404 }
-
-        const filePath = `${this.config.directory}/files/${name}`;
-        if (!fs.existsSync(filePath)) {
+        if (!name)
+            return { err: 'File name required' };
+        const filesDir = `${this.config.directory}/files`;
+        const filePath = `${filesDir}/${name}`;
+        if (!fs.existsSync(filePath))
             return { err: 'File not found', code: 404 };
-        }
         try {
-            const data = fs.readFileSync(filePath);
-            return { success: true, data };
-        } catch (error) {
+            return { success: true, data: fs.readFileSync(filePath) };
+        }
+        catch (error) {
             return { err: `Failed to read file: ${error.message}` };
         }
     }
-
-    /**
-     * Reads and processes an image with various configuration options
-     * @param {string} name - The name or path of the image to read
-     * @param {object} [config] - Configuration options for image processing
-     * @param {boolean} [config.returnBase64=true] - Whether to return image as base64 string
-     * @param {number} [config.quality=1] - Image quality (0 to 1)
-     * @param {number} [config.pixels=0] - Resize to specific number of pixels (0 keeps original size)
-     * @param {boolean} [config.blackAndWhite=false] - Convert image to black and white
-     * @param {boolean} [config.mirror=false] - Mirror the image horizontally
-     * @param {boolean} [config.upToDown=false] - Flip the image vertically
-     * @param {boolean} [config.invert=false] - Invert image colors
-     * @param {number} [config.brightness=1] - Brightness adjustment (1 = normal)
-     * @param {number} [config.contrast=1] - Contrast adjustment (1 = normal)
-     * @param {number|null} [config.maxWidth=null] - Maximum width for resizing
-     * @param {number|null} [config.maxHeight=null] - Maximum height for resizing
-     * @returns {Promise<string|ImageData>} Processed image data (base64 string or ImageData object)
-     */
-    async readImage(name, config = {
-        returnBase64: true,
-        quality: 1,
-        pixels: 0, // 0 = keep original size
-        blackAndWhite: false,
-        mirror: false,
-        upToDown: false,
-        invert: false,
-        brightness: 1,
-        contrast: 1,
-        maxWidth: null,
-        maxHeight: null
-    }) {
-        if (!name) return { err: 'File name required' };
-        if (name.includes('/') || name.includes('\\')) return { err: 'Invalid file name. Avoid special characters.' }
-        if (!fs.existsSync(`${this.config.directory}/files`)) {
-            return { err: 'Files directory not found', code: 404 };
-        }
-
-        const filePath = `${this.config.directory}/files/${name}`;
-        if (!fs.existsSync(filePath)) {
+    async readImage(name, config = {}) {
+        if (!name)
+            return { err: 'File name required' };
+        if (name.includes('/') || name.includes('\\'))
+            return { err: 'Invalid file name' };
+        const filesDir = `${this.config.directory}/files`;
+        const filePath = `${filesDir}/${name}`;
+        if (!fs.existsSync(filePath))
             return { err: 'File not found', code: 404 };
-        }
-
-        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.svg', '.ico', '.heic', '.avif', '.jfif'];
+        const imageExtensions = [
+            '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp',
+            '.tiff', '.svg', '.ico', '.heic', '.avif', '.jfif',
+        ];
         const ext = path.extname(name).toLowerCase();
-
-        if (!imageExtensions.includes(ext)) {
+        if (!imageExtensions.includes(ext))
             return { err: 'Not a valid image file' };
-        }
-
         try {
             const data = fs.readFileSync(filePath);
-
-            // Enhanced config with validation
             const processingConfig = {
                 returnBase64: config.returnBase64 !== false,
-                quality: Math.max(0.1, Math.min(1, config.quality || 1)),
-                pixels: Math.max(0, config.pixels || 0),
+                quality: Math.max(0.1, Math.min(1, config.quality ?? 1)),
+                pixels: Math.max(0, config.pixels ?? 0),
                 blackAndWhite: Boolean(config.blackAndWhite),
                 mirror: Boolean(config.mirror),
                 upToDown: Boolean(config.upToDown),
                 invert: Boolean(config.invert),
-                brightness: Math.max(0.1, Math.min(5, config.brightness || 1)),
-                contrast: Math.max(0.1, Math.min(5, config.contrast || 1)),
-                maxWidth: config.maxWidth > 0 ? Math.round(config.maxWidth) : null,
-                maxHeight: config.maxHeight > 0 ? Math.round(config.maxHeight) : null
+                brightness: Math.max(0.1, Math.min(5, config.brightness ?? 1)),
+                contrast: Math.max(0.1, Math.min(5, config.contrast ?? 1)),
+                maxWidth: (config.maxWidth ?? 0) > 0 ? Math.round(config.maxWidth) : null,
+                maxHeight: (config.maxHeight ?? 0) > 0 ? Math.round(config.maxHeight) : null,
             };
-
             const res = await imageProcess(data, ext, processingConfig);
-
-            // Get file stats for additional info
             const stats = fs.statSync(filePath);
-
             return {
                 success: true,
                 data: res,
                 metadata: {
-                    filename: name,
-                    extension: ext,
-                    originalSize: stats.size,
+                    filename: name, extension: ext, originalSize: stats.size,
                     processingApplied: {
                         resized: processingConfig.pixels > 0,
                         qualityReduced: processingConfig.quality < 1,
@@ -1505,41 +1199,33 @@ class eveloDB {
                         flippedVertical: processingConfig.upToDown,
                         inverted: processingConfig.invert,
                         brightnessAdjusted: processingConfig.brightness !== 1,
-                        contrastAdjusted: processingConfig.contrast !== 1
-                    }
-                }
+                        contrastAdjusted: processingConfig.contrast !== 1,
+                    },
+                },
             };
-
-        } catch (error) {
-            console.error('Image processing error:', error);
-            return {
-                err: `Failed to process image: ${error.message}`,
-                code: 'PROCESSING_ERROR'
-            };
+        }
+        catch (error) {
+            return { err: `Failed to process image: ${error.message}`, code: 'PROCESSING_ERROR' };
         }
     }
-
-    /**
-     * 
-     * @param {string} name 
-     * @returns 
-     */
     deleteFile(name) {
-        if (!name) return { err: 'File name required' };
-
-        if (!fs.existsSync(`${this.config.directory}/files`)) return { err: 'Files not found', code: 404 }
-
+        if (!name)
+            return { err: 'File name required' };
         const filePath = `${this.config.directory}/files/${name}`;
-        if (!fs.existsSync(filePath)) {
+        if (!fs.existsSync(filePath))
             return { err: 'File not found', code: 404 };
-        }
         try {
             fs.unlinkSync(filePath);
             return { success: true };
-        } catch (error) {
+        }
+        catch (error) {
             return { err: `Failed to delete file: ${error.message}` };
         }
     }
 }
-
-module.exports = eveloDB;
+export default eveloDB;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = eveloDB;
+    module.exports.default = eveloDB;
+    module.exports.eveloDB = eveloDB;
+}
