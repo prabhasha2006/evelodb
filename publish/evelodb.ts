@@ -1,8 +1,8 @@
 import * as fs from 'fs';
-import { encrypt, decrypt, generateKey } from './encryption';
+import { encrypt, decrypt, generateKey } from './encryption.js';
 import { BSON, ObjectId } from 'bson';
 import { GoogleGenAI } from '@google/genai';
-import imageProcess from './imageProcess';
+import imageProcess from './imageProcess.js';
 import * as path from 'path';
 
 // ─── Type Definitions ──────────────────────────────────────────────────────────
