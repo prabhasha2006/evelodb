@@ -1573,14 +1573,37 @@ export class eveloDB {
 
   writeData(collection: string, data: unknown): WriteResult {
     if (!collection) return { err: 'collection required!' };
-    if (this.config.encode === 'bson') return { err: 'writeData() not supported in BSON mode' };
+
+    if (this.config.encode === 'bson') {
+      try {
+        this.bsonDrop(collection);
+        const handle = this.getHandle(collection);
+        const pk = this.pkName();
+        const records = Array.isArray(data)
+          ? (data as Record<string, unknown>[])
+          : [{ saved_plain_data: 'bson', data }];
+
+        for (const doc of records) {
+          if (!doc[pk]) doc[pk] = this.generateUniqueId();
+          const { offset, len } = handle.store.append(doc);
+          const key = String(doc[pk]);
+          handle.index.insert({ key, offset, len });
+        }
+        handle.index.flush();
+        return { success: true };
+      } catch (err) {
+        return { err: (err as Error).message };
+      }
+    }
 
     try {
       const p = this.getJsonPath(collection);
       const tmp = p + '.tmp';
       const content = this.config.encryption
-        ? this.encryptData(data) as string
-        : (typeof data === 'string' ? data : JSON.stringify(data, null, this.config.tabspace));
+        ? (this.encryptData(data) as string)
+        : typeof data === 'string'
+        ? data
+        : JSON.stringify(data, null, this.config.tabspace);
       fs.writeFileSync(tmp, content);
       fs.renameSync(tmp, p);
       return { success: true };
@@ -1591,10 +1614,23 @@ export class eveloDB {
 
   readData(collection: string): unknown {
     if (!collection) return { err: 'collection required!' };
-    if (this.config.encode === 'bson') return this.bsonAll(collection);
 
-    const p = this.getJsonPath(collection);
-    if (!fs.existsSync(p)) return null;
+    const p = this.config.encode === 'bson'
+      ? this.getBsonPaths(collection).dataPath
+      : this.getJsonPath(collection);
+
+    if (!fs.existsSync(p)) return null
+
+    if (this.config.encode === 'bson') {
+      const all = this.bsonAll(collection);
+      if (Array.isArray(all) && all.length === 1) {
+        const item = all[0];
+        if (item && item.saved_plain_data === 'bson') {
+          return item.data;
+        }
+      }
+      return all;
+    }
 
     try {
       const raw = fs.readFileSync(p, 'utf8');

@@ -1,19 +1,19 @@
-import EveDB, { type EveloDBConfig } from "evelodb";
+import EveDB, { type EveloDBConfig } from "./publish/evelodb";
 
 const config: EveloDBConfig = {
-    extension: "json",
+    extension: "db",
     tabspace: 3,
-    encode: "json",
+    encode: "bson",
     encryption: null,
     encryptionKey: null,
-    noRepeat: false,
+    noRepeat: true,
     autoPrimaryKey: true,
     objectId: false,
 }
 
 const db = new EveDB(config);
 
-for (let i = 0; i < 1; i++) {
+/* for (let i = 0; i < 1; i++) {
 const a = db.create("cdn", {
     contentHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 
@@ -46,11 +46,21 @@ const a = db.create("cdn", {
 
     totalAccessCount: 42
 })
-}
+} */
 
-/* const b = db.delete("cdn", {
-    _id: "mohbahmia1k0z3h6"
-})
+const b = db.writeData("aa",
+    [{
+        a: "b"
+    }, {
+        b: "c"
+    }, {
+        c: "d"
+    }, {
+        d: "e"
+    }]
+)
 console.log(b);
- */
+const c = db.readData("aa");
+console.log(c);
+
 //console.log(a);

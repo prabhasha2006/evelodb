@@ -13,6 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "evelodb": "^1.4.11"
+    "evelodb": "^1.4.11",
+    "evelodb-global": "^1.0.2"
   }
 }
