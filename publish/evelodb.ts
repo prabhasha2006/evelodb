@@ -716,6 +716,36 @@ class BSONPageStore {
   }
 
   getFileSize(): number { return this.fileSize; }
+
+  /**
+   * Scans the data file and yields all live records found.
+   * Useful for index rebuilding from a raw .bson file.
+   */
+  *scan(): Generator<{ offset: number; len: number; doc: Record<string, unknown> }> {
+    if (this.fd === null) return;
+    let pos = 0;
+    this.liveCount = 0;
+    this.tombstoneCount = 0;
+    while (pos + HEADER_SIZE <= this.fileSize) {
+      const header = Buffer.allocUnsafe(HEADER_SIZE);
+      fs.readSync(this.fd, header, 0, HEADER_SIZE, pos);
+      const bodyLen = header.readUInt32LE(0);
+      const flags = header[4];
+      const len = HEADER_SIZE + bodyLen;
+      if (pos + len > this.fileSize) break;
+
+      if (flags === FLAG_LIVE) {
+        const doc = this.read(pos, len);
+        if (doc) {
+          this.liveCount++;
+          yield { offset: pos, len, doc };
+        }
+      } else {
+        this.tombstoneCount++;
+      }
+      pos += len;
+    }
+  }
 }
 
 // ─── QueryResult ───────────────────────────────────────────────────────────────
@@ -829,6 +859,18 @@ export class eveloDB {
       lastAccess: Date.now(),
     };
     this.handles.set(collection, handle);
+
+    // FIX: If index file is missing but data file exists and has data, rebuild the index.
+    // This allows migration from older eveloDB versions that didn't use .bidx files.
+    if (!fs.existsSync(idxPath) && fs.existsSync(dataPath) && handle.store.getFileSize() > 0) {
+      const pk = this.pkName();
+      for (const { offset, len, doc } of handle.store.scan()) {
+        const key = String(doc[pk] ?? '');
+        if (key) handle.index.insert({ key, offset, len });
+      }
+      handle.index.flush();
+    }
+
     return handle;
   }
 
