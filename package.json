@@ -11,21 +11,6 @@
     "build": "node build.js",
     "prepare": "npm run build"
   },
-  "dependencies": {
-    "@google/genai": "^1.8.0",
-    "bson": "^6.10.4",
-    "crypto": "^1.0.1",
-    "evelodb": "^1.4.9",
-    "sharp": "^0.34.3"
-  },
-  "keywords": [
-    "database",
-    "file-based",
-    "encryption",
-    "bson",
-    "json"
-  ],
-  "author": "Evelocore",
   "license": "MIT",
   "devDependencies": {
     "javascript-obfuscator": "^4.1.1"

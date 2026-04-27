@@ -1,7 +1,7 @@
-import EveDB, { type EveloDBConfig } from "evelodb";
+import EveDB, { type EveloDBConfig } from "./publish/evelodb";
 
 const config: EveloDBConfig = {
-    extension: "bson",
+    extension: "db",
     tabspace: 3,
     encode: "bson",
     encryption: null,
@@ -18,4 +18,7 @@ const a = db.create("test", {
     state: "accept",
 });
 
-console.log(a);
+const b = db.readData("test");
+console.log(b);
+
+//console.log(a);

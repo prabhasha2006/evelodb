@@ -1,5 +1,5 @@
 
-const eveloDB = require('evelodb')
+const eveloDB = require('./evelodb.js')
 const fs = require('fs');
 let db
 try {
