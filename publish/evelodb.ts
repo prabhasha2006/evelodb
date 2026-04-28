@@ -351,6 +351,8 @@ class PersistedBTree {
     // Atomic write: write to tmp then rename
     const tmp = this.idxPath + '.tmp';
     fs.writeFileSync(tmp, Buffer.from(arr));
+    // Windows-safe: unlink target before rename
+    try { if (fs.existsSync(this.idxPath)) fs.unlinkSync(this.idxPath); } catch { /* ignore */ }
     fs.renameSync(tmp, this.idxPath);
     this.dirty = false;
   }
@@ -708,6 +710,8 @@ class BSONPageStore {
     // Clear WAL before rename so stale WAL entries don't replay against new file
     try { fs.writeFileSync(this.walPath, Buffer.alloc(0)); } catch { /* ignore */ }
 
+    // Windows-safe: unlink target before rename
+    try { if (fs.existsSync(this.dataPath)) fs.unlinkSync(this.dataPath); } catch { /* ignore */ }
     fs.renameSync(tmpPath, this.dataPath);
     this.open();
     this.tombstoneCount = 0;
@@ -983,6 +987,8 @@ export class eveloDB {
       : JSON.stringify(data, null, this.config.tabspace);
     // Atomic write via tmp + rename
     fs.writeFileSync(tmp, content);
+    // Windows-safe: unlink target before rename
+    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
     fs.renameSync(tmp, p);
   }
 
@@ -1565,9 +1571,12 @@ export class eveloDB {
       }
     }
 
-    const tmp = this.getJsonPath(collection) + '.tmp';
+    const p = this.getJsonPath(collection);
+    const tmp = p + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(normalized, null, this.config.tabspace));
-    fs.renameSync(tmp, this.getJsonPath(collection));
+    // Windows-safe: unlink target before rename
+    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
+    fs.renameSync(tmp, p);
     return { success: true };
   }
 
@@ -1869,6 +1878,8 @@ export class eveloDB {
             : JSON.stringify(records, null, 3);
           const tmp = toPath + '.tmp';
           fs.writeFileSync(tmp, newContent as string);
+          // Windows-safe: unlink target before rename
+          try { if (fs.existsSync(toPath)) fs.unlinkSync(toPath); } catch { /* ignore */ }
           fs.renameSync(tmp, toPath);
         }
 
@@ -1973,9 +1984,12 @@ Rules:
     const filesDir = `${this.config.directory}/files`;
     if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir, { recursive: true });
     try {
-      const tmp = `${filesDir}/${name}.tmp`;
+      const target = `${filesDir}/${name}`;
+      const tmp = target + '.tmp';
       fs.writeFileSync(tmp, data);
-      fs.renameSync(tmp, `${filesDir}/${name}`);
+      // Windows-safe: unlink target before rename
+      try { if (fs.existsSync(target)) fs.unlinkSync(target); } catch { /* ignore */ }
+      fs.renameSync(tmp, target);
       return { success: true };
     } catch (error) {
       return { err: `Failed to write file: ${(error as Error).message}` };
