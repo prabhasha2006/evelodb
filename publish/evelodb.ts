@@ -351,8 +351,6 @@ class PersistedBTree {
     // Atomic write: write to tmp then rename
     const tmp = this.idxPath + '.tmp';
     fs.writeFileSync(tmp, Buffer.from(arr));
-    // Windows-safe: unlink target before rename
-    try { if (fs.existsSync(this.idxPath)) fs.unlinkSync(this.idxPath); } catch { /* ignore */ }
     fs.renameSync(tmp, this.idxPath);
     this.dirty = false;
   }
@@ -710,8 +708,6 @@ class BSONPageStore {
     // Clear WAL before rename so stale WAL entries don't replay against new file
     try { fs.writeFileSync(this.walPath, Buffer.alloc(0)); } catch { /* ignore */ }
 
-    // Windows-safe: unlink target before rename
-    try { if (fs.existsSync(this.dataPath)) fs.unlinkSync(this.dataPath); } catch { /* ignore */ }
     fs.renameSync(tmpPath, this.dataPath);
     this.open();
     this.tombstoneCount = 0;
@@ -987,8 +983,6 @@ export class eveloDB {
       : JSON.stringify(data, null, this.config.tabspace);
     // Atomic write via tmp + rename
     fs.writeFileSync(tmp, content);
-    // Windows-safe: unlink target before rename
-    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
     fs.renameSync(tmp, p);
   }
 
@@ -1571,215 +1565,85 @@ export class eveloDB {
       }
     }
 
-    const p = this.getJsonPath(collection);
-    const tmp = p + '.tmp';
+    const tmp = this.getJsonPath(collection) + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(normalized, null, this.config.tabspace));
-    // Windows-safe: unlink target before rename
-    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
-    fs.renameSync(tmp, p);
+    fs.renameSync(tmp, this.getJsonPath(collection));
     return { success: true };
   }
 
-  // ── detectPkField ─────────────────────────────────────────────────────────
-  private detectPkField(collection: string): string | null {
-    const ext = this.config.extension;
-    const dataPath = `${this.config.directory}/${collection}.${ext}`;
-    const idxPath = `${this.config.directory}/${collection}.${ext}.bidx`;
-
-    if (!fs.existsSync(dataPath) || !fs.existsSync(idxPath)) return null;
-
-    let handle = this.handles.get(collection);
-    let tmpStore: BSONPageStore | null = null;
-
-    if (!handle) {
-      tmpStore = new BSONPageStore(dataPath);
-      handle = {
-        store: tmpStore,
-        index: new PersistedBTree(idxPath, 128),
-      } as CollectionHandle;
-    }
-
-    try {
-      const entries = handle.index.allEntries();
-      if (entries.length === 0) return null;
-
-      const firstEntry = entries[0];
-      const doc = handle.store.read(firstEntry.offset, firstEntry.len);
-      if (!doc) return null;
-
-      // skip wrapper fields from non-array writeData()
-      const keyValue = firstEntry.key;
-      const configPk = this.pkName();
-      const reserved = new Set(['saved_plain_data', 'data']);
-      const matches = Object.keys(doc)
-        .filter(field => !reserved.has(field) && String(doc[field]) === keyValue);
-
-      if (matches.length === 0) return null;
-      if (matches.includes(configPk)) return configPk;
-      return matches[0];
-    } finally {
-      if (tmpStore) tmpStore.close();
-    }
-  }
-
-  // ── writeData ─────────────────────────────────────────────────────────────
   writeData(collection: string, data: unknown): WriteResult {
     if (!collection) return { err: 'collection required!' };
 
-    const ext = this.config.extension;
-    const dataPath = `${this.config.directory}/${collection}.${ext}`;
-    const idxPath = `${this.config.directory}/${collection}.${ext}.bidx`;
-    const walPath = `${this.config.directory}/${collection}.${ext}.wal`;
-    const tmpData = dataPath + '.tmp';
-    const tmpIdx = idxPath + '.tmp';
-
-    // ── close handle before ANY file operation ────────────────────────────
-    // Windows holds file locks until the fd is explicitly closed.
-    // Must happen before unlink or rename — not just before the rename.
-    const h = this.handles.get(collection);
-    if (h) { h.index.flush(); h.store.close(); this.handles.delete(collection); }
-
-    // ── NON-ARRAY: plain object / config store ────────────────────────────
-    if (!Array.isArray(data)) {
-      if (this.config.encode === 'bson') {
-        try {
-          const pk = this.pkName();
-          const id = String(this.generateUniqueId());
-          const doc = { [pk]: id, saved_plain_data: 'bson', data };
-
-          const store = new BSONPageStore(tmpData);
-          const index = new PersistedBTree(tmpIdx, 128);
-          const { offset, len } = store.append(doc);
-          index.insert({ key: id, offset, len });
-          index.flush();
-          store.close();
-
-          try { fs.writeFileSync(walPath, Buffer.alloc(0)); } catch { /* ignore */ }
-
-          // Windows-safe: unlink target before rename
-          try { if (fs.existsSync(dataPath)) fs.unlinkSync(dataPath); } catch { /* ignore */ }
-          try { if (fs.existsSync(idxPath)) fs.unlinkSync(idxPath); } catch { /* ignore */ }
-          fs.renameSync(tmpData, dataPath);
-          fs.renameSync(tmpIdx, idxPath);
-          return { success: true };
-        } catch (err) {
-          try { if (fs.existsSync(tmpData)) fs.unlinkSync(tmpData); } catch { /* ignore */ }
-          try { if (fs.existsSync(tmpIdx)) fs.unlinkSync(tmpIdx); } catch { /* ignore */ }
-          return { err: `writeData() failed: ${(err as Error).message}` };
-        }
-      }
-
-      // JSON non-array
-      try {
-        const p = this.getJsonPath(collection);
-        const tmp = p + '.tmp';
-        const content = this.config.encryption
-          ? (this.encryptData(data) as string)
-          : JSON.stringify(data, null, this.config.tabspace);
-        fs.writeFileSync(tmp, content);
-        try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
-        fs.renameSync(tmp, p);
-        return { success: true };
-      } catch (err) {
-        return { err: `writeData() failed: ${(err as Error).message}` };
-      }
-    }
-
-    // ── ARRAY: records collection ─────────────────────────────────────────
-    const records = data as Record<string, unknown>[];
-
-    const pk = this.config.encode === 'bson'
-      ? (this.detectPkField(collection) ?? this.pkName())
-      : this.pkName();
-
-    const missingIdx = records.findIndex(
-      r => r[pk] === undefined || r[pk] === null || r[pk] === ''
-    );
-    if (missingIdx !== -1) {
-      return {
-        err: `record at index ${missingIdx} is missing primary key field "${pk}"`,
-        code: 'MISSING_PK',
-      };
-    }
-
-    const seen = new Set<string>();
-    for (let i = 0; i < records.length; i++) {
-      const key = String(records[i][pk]);
-      if (seen.has(key))
-        return { err: `duplicate primary key "${key}" at index ${i}`, code: 'DUPLICATE_KEY' };
-      seen.add(key);
-    }
-
     if (this.config.encode === 'bson') {
       try {
-        const store = new BSONPageStore(tmpData);
-        const index = new PersistedBTree(tmpIdx, 128);
+        this.bsonDrop(collection);
+        const handle = this.getHandle(collection);
+        const pk = this.pkName();
+        const records = Array.isArray(data)
+          ? (data as Record<string, unknown>[])
+          : [{ saved_plain_data: 'bson', data }];
 
         for (const doc of records) {
+          if (!doc[pk]) doc[pk] = this.generateUniqueId();
+          const { offset, len } = handle.store.append(doc);
           const key = String(doc[pk]);
-          const { offset, len } = store.append(doc);
-          index.insert({ key, offset, len });
+          handle.index.insert({ key, offset, len });
         }
-
-        index.flush();
-        store.close();
-
-        try { fs.writeFileSync(walPath, Buffer.alloc(0)); } catch { /* ignore */ }
-
-        // Windows-safe: unlink target before rename
-        try { if (fs.existsSync(dataPath)) fs.unlinkSync(dataPath); } catch { /* ignore */ }
-        try { if (fs.existsSync(idxPath)) fs.unlinkSync(idxPath); } catch { /* ignore */ }
-        fs.renameSync(tmpData, dataPath);
-        fs.renameSync(tmpIdx, idxPath);
+        handle.index.flush();
         return { success: true };
       } catch (err) {
-        try { if (fs.existsSync(tmpData)) fs.unlinkSync(tmpData); } catch { /* ignore */ }
-        try { if (fs.existsSync(tmpIdx)) fs.unlinkSync(tmpIdx); } catch { /* ignore */ }
-        return { err: `writeData() failed: ${(err as Error).message}` };
+        return { err: (err as Error).message };
       }
     }
 
-    // JSON array
     try {
       const p = this.getJsonPath(collection);
       const tmp = p + '.tmp';
       const content = this.config.encryption
-        ? (this.encryptData(records) as string)
-        : JSON.stringify(records, null, this.config.tabspace);
+        ? (this.encryptData(data) as string)
+        : typeof data === 'string'
+        ? data
+        : JSON.stringify(data, null, this.config.tabspace);
       fs.writeFileSync(tmp, content);
-      try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch { /* ignore */ }
       fs.renameSync(tmp, p);
       return { success: true };
     } catch (err) {
-      return { err: `writeData() failed: ${(err as Error).message}` };
+      return { err: (err as Error).message };
     }
   }
-
-  // ── readData ──────────────────────────────────────────────────────────────
 
   readData(collection: string): unknown {
     if (!collection) return { err: 'collection required!' };
 
+    const p = this.config.encode === 'bson'
+      ? this.getBsonPaths(collection).dataPath
+      : this.getJsonPath(collection);
+
+    if (!fs.existsSync(p)) return null
+
     if (this.config.encode === 'bson') {
-      const records = this.bsonAll(collection);
-
-      // unwrap plain object saved by non-array writeData()
-      if (records.length === 1 && records[0].saved_plain_data === 'bson') {
-        return records[0].data;
+      const all = this.bsonAll(collection);
+      if (Array.isArray(all) && all.length === 1) {
+        const item = all[0];
+        if (item && item.saved_plain_data === 'bson') {
+          return item.data;
+        }
       }
-
-      return records;
+      return all;
     }
 
-    // JSON
-    const p = this.getJsonPath(collection);
-    if (!fs.existsSync(p)) return null;
     try {
       const raw = fs.readFileSync(p, 'utf8');
-      const content = this.config.encryption ? this.decryptData(raw) : raw;
-      if (typeof content !== 'string') return content;
-      try { return JSON.parse(content); } catch { return content; }
-    } catch { return null; }
+      const decrypted = this.config.encryption ? this.decryptData(raw) : raw;
+      if (typeof decrypted !== 'string') return decrypted;
+      try {
+        return JSON.parse(decrypted);
+      } catch {
+        return decrypted;
+      }
+    } catch {
+      return null;
+    }
   }
 
   // ── Config Migration ──────────────────────────────────────────────────────
@@ -1878,8 +1742,6 @@ export class eveloDB {
             : JSON.stringify(records, null, 3);
           const tmp = toPath + '.tmp';
           fs.writeFileSync(tmp, newContent as string);
-          // Windows-safe: unlink target before rename
-          try { if (fs.existsSync(toPath)) fs.unlinkSync(toPath); } catch { /* ignore */ }
           fs.renameSync(tmp, toPath);
         }
 
@@ -1984,12 +1846,9 @@ Rules:
     const filesDir = `${this.config.directory}/files`;
     if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir, { recursive: true });
     try {
-      const target = `${filesDir}/${name}`;
-      const tmp = target + '.tmp';
+      const tmp = `${filesDir}/${name}.tmp`;
       fs.writeFileSync(tmp, data);
-      // Windows-safe: unlink target before rename
-      try { if (fs.existsSync(target)) fs.unlinkSync(target); } catch { /* ignore */ }
-      fs.renameSync(tmp, target);
+      fs.renameSync(tmp, `${filesDir}/${name}`);
       return { success: true };
     } catch (error) {
       return { err: `Failed to write file: ${(error as Error).message}` };
