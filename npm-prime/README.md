@@ -178,6 +178,7 @@ result.sort((a, b) => ...);    // Sorts the result set
 
 <br><br>
 
+<a id="backup"></a>
 # 💾 Backup Data
 Export your collection data for safekeeping or migration.
 
