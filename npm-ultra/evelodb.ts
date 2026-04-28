@@ -939,9 +939,56 @@ export class eveloDB {
   // ── Primary key helpers ───────────────────────────────────────────────────
 
   private pkName(): string {
-    return typeof this.config.autoPrimaryKey === 'string' && this.config.autoPrimaryKey.length > 0
-      ? this.config.autoPrimaryKey
-      : '_id';
+    return '_id';
+  }
+
+  private virtualPkName(): string | null {
+    const apk = this.config.autoPrimaryKey;
+    if (apk === false) return null;
+    return typeof apk === 'string' && apk.length > 0 ? apk : '_id';
+  }
+
+  private mapToInternal(data: Record<string, unknown>): Record<string, unknown> {
+    const vpk = this.virtualPkName();
+    if (!vpk || vpk === '_id') return { ...data };
+
+    const result = { ...data };
+    if (result[vpk] !== undefined) {
+      if (result._id === undefined) {
+        result._id = result[vpk];
+        delete result[vpk];
+      }
+    }
+    return result;
+  }
+
+  private mapToExternal(data: Record<string, unknown>): Record<string, unknown> {
+    const vpk = this.virtualPkName();
+    const result = { ...data };
+    if (!vpk) {
+      delete result._id;
+      return result;
+    }
+    if (vpk !== '_id' && result._id !== undefined) {
+      result[vpk] = result._id;
+      delete result._id;
+    }
+    return result;
+  }
+
+  private mapConditionsToInternal(conditions: Conditions): Conditions {
+    const vpk = this.virtualPkName();
+    if (!vpk || vpk === '_id') return conditions;
+
+    const result: Conditions = {};
+    for (const [key, value] of Object.entries(conditions)) {
+      if (key === vpk) {
+        result._id = value;
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
   }
 
   private generateUniqueId(): string | ObjectId {
@@ -1029,25 +1076,65 @@ export class eveloDB {
   // ── Proactive Migration ───────────────────────────────────────────────────
 
   private proactiveMigration(): void {
-    // Proactive migration is primarily for BSON format transitions.
-    if (this.config.encode !== 'bson') return;
     if (!fs.existsSync(this.config.directory)) return;
 
     try {
       const files = fs.readdirSync(this.config.directory);
-      const ext = `.${this.config.extension}`;
+      const vpk = this.virtualPkName();
+      if (!vpk) return;
+
       for (const file of files) {
-        if (file.endsWith(ext)) {
-          const collection = path.basename(file, ext);
-          const { idxPath } = this.getBsonPaths(collection);
-          // If the .bidx file is missing, getHandle() will detect if it's 
-          // an old-format BSON file and migrate it automatically.
-          if (!fs.existsSync(idxPath)) {
-            try {
-              this.getHandle(collection);
-            } catch (err) {
-              console.warn(`[eveloDB] Proactive migration failed for "${collection}":`, err);
+        const ext = path.extname(file).slice(1);
+        if (ext !== this.config.extension) continue;
+        if (file.endsWith('.bidx') || file.endsWith('.wal') || file.endsWith('.tmp')) continue;
+
+        const collection = path.basename(file, '.' + ext);
+        let records: Record<string, unknown>[] = [];
+        let needsMigration = false;
+
+        if (this.config.encode === 'bson') {
+          const { dataPath, idxPath } = this.getBsonPaths(collection);
+          // Check if index missing or if we need to scan for _id-less objects
+          // For BSON, we use a temporary store to scan
+          const tempStore = new BSONPageStore(dataPath);
+          for (const { doc } of tempStore.scan()) {
+            if (doc && !doc._id && vpk !== '_id' && doc[vpk]) {
+              needsMigration = true;
+              break;
             }
+          }
+          tempStore.close();
+
+          if (needsMigration) {
+            // Re-read everything and migrate
+            const tempStore2 = new BSONPageStore(dataPath);
+            records = Array.from(tempStore2.scan()).map(r => r.doc);
+            tempStore2.close();
+            
+            for (const doc of records) {
+              if (!doc._id && doc[vpk]) {
+                doc._id = doc[vpk];
+                delete doc[vpk];
+              }
+            }
+            // Rewrite collection
+            this.writeData(collection, records);
+          } else if (!fs.existsSync(idxPath) && fs.statSync(dataPath).size > 0) {
+            // Just rebuild index if missing
+            this.getHandle(collection);
+          }
+        } else {
+          // JSON path
+          records = this.readJson(collection);
+          for (const doc of records) {
+            if (!doc._id && vpk !== '_id' && doc[vpk]) {
+              doc._id = doc[vpk];
+              delete doc[vpk];
+              needsMigration = true;
+            }
+          }
+          if (needsMigration) {
+            this.writeJson(collection, records);
           }
         }
       }
@@ -1124,7 +1211,6 @@ export class eveloDB {
 
   // ── CRUD — BSON path ──────────────────────────────────────────────────────
 
-  // Add this private helper to eveloDB
   private buildFingerprintSet(
     records: Record<string, unknown>[],
     pk: string
@@ -1144,28 +1230,33 @@ export class eveloDB {
     return JSON.stringify(copy, Object.keys(copy).sort());
   }
 
-  // Then replace isDuplicateInArray usages in bsonCreate and bsonEdit with:
   private bsonCreate(collection: string, data: Record<string, unknown>): WriteResult {
     const h = this.getHandle(collection);
+    const vpk = this.virtualPkName();
+    
+    if (vpk && vpk !== '_id' && data[vpk] !== undefined) {
+      return { err: `autoPrimaryKey "${vpk}" cannot be an existing key in the data object`, code: 'INVALID_KEY' };
+    }
+
+    const internalData = this.mapToInternal(data);
     const pk = this.pkName();
 
-    if (!data[pk]) data[pk] = this.generateUniqueId();
-    const key = String(data[pk]);
+    if (!internalData[pk]) internalData[pk] = this.generateUniqueId();
+    const key = String(internalData[pk]);
 
     if (h.index.find(key)) return { err: 'Duplicate primary key', code: 'DUPLICATE_KEY' };
 
     if (this.config.noRepeat) {
-      // FIX: O(n) fingerprint check instead of O(n²) deepCompare loop
       const all = this.bsonAll(collection);
       const fingerprints = this.buildFingerprintSet(all, pk);
-      if (fingerprints.has(this.fingerprintOf(data, pk)))
+      if (fingerprints.has(this.fingerprintOf(internalData, pk)))
         return { err: 'Duplicate data (noRepeat enabled)', code: 'DUPLICATE_DATA' };
     }
 
-    const { offset, len } = h.store.append(data);
+    const { offset, len } = h.store.append(internalData);
     h.index.insert({ key, offset, len });
     this.flushHandle(collection);
-    return { success: true, [pk]: data[pk] };
+    return { success: true, [vpk || pk]: internalData[pk] };
   }
 
   private bsonFindOne(collection: string, conditions: Conditions): Record<string, unknown> | null {
@@ -1181,8 +1272,12 @@ export class eveloDB {
       return this.matchesConditions(doc, conditions) ? doc : null;
     }
 
-    const all = this.bsonAll(collection);
-    return (all.find(item => this.matchesConditions(item, conditions)) ?? null);
+    const h = this.getHandle(collection);
+    for (const e of h.index.allEntries()) {
+      const doc = h.store.read(e.offset, e.len);
+      if (doc && this.matchesConditions(doc, conditions)) return doc;
+    }
+    return null;
   }
 
   private bsonFind(collection: string, conditions: Conditions): Record<string, unknown>[] {
@@ -1194,10 +1289,20 @@ export class eveloDB {
       return doc ? [doc] : [];
     }
 
-    return this.bsonAll(collection).filter(item => this.matchesConditions(item, conditions));
+    const h = this.getHandle(collection);
+    const results: Record<string, unknown>[] = [];
+    for (const e of h.index.allEntries()) {
+      const doc = h.store.read(e.offset, e.len);
+      if (doc && this.matchesConditions(doc, conditions)) results.push(doc);
+    }
+    return results;
   }
 
   private bsonAll(collection: string): Record<string, unknown>[] {
+    return this.bsonAllInternal(collection).map(doc => this.mapToExternal(doc));
+  }
+
+  private bsonAllInternal(collection: string): Record<string, unknown>[] {
     const h = this.getHandle(collection);
     const entries = h.index.allEntries();
     const results: Record<string, unknown>[] = [];
@@ -1209,8 +1314,9 @@ export class eveloDB {
   }
 
   private bsonDelete(collection: string, conditions: Conditions): DeleteResult {
+    const internalConditions = this.mapConditionsToInternal(conditions);
     const pk = this.pkName();
-    const pkVal = conditions[pk];
+    const pkVal = internalConditions[pk];
     const h = this.getHandle(collection);
     let deletedCount = 0;
 
@@ -1219,7 +1325,7 @@ export class eveloDB {
       const entry = h.index.find(key);
       if (entry) {
         const doc = h.store.read(entry.offset, entry.len);
-        if (doc && this.matchesConditions(doc, conditions)) {
+        if (doc && this.matchesConditions(doc, internalConditions)) {
           h.store.tombstone(entry.offset);
           h.index.delete(key);
           deletedCount = 1;
@@ -1228,7 +1334,7 @@ export class eveloDB {
     } else {
       for (const e of h.index.allEntries()) {
         const doc = h.store.read(e.offset, e.len);
-        if (doc && this.matchesConditions(doc, conditions)) {
+        if (doc && this.matchesConditions(doc, internalConditions)) {
           h.store.tombstone(e.offset);
           h.index.delete(e.key);
           deletedCount++;
@@ -1246,22 +1352,20 @@ export class eveloDB {
     conditions: Conditions,
     newData: Record<string, unknown>
   ): EditResult {
+    const internalConditions = this.mapConditionsToInternal(conditions);
     const pk = this.pkName();
     const h = this.getHandle(collection);
     let modifiedCount = 0;
     let skippedDuplicates = 0;
 
-    const toUpdate = this.bsonFind(collection, conditions);
+    const toUpdate = this.bsonFind(collection, internalConditions);
     if (toUpdate.length === 0) return { err: 'No matching records found', code: 'NO_MATCH' };
 
-    // FIX: snapshot excludes the records being updated so we compare against
-    // records that won't be touched, then track newly written docs ourselves.
     const updatingKeys = new Set(toUpdate.map(d => String(d[pk])));
     const baseSnapshot: Record<string, unknown>[] = this.config.noRepeat
-      ? this.bsonAll(collection).filter(d => !updatingKeys.has(String(d[pk])))
+      ? this.bsonAllInternal(collection).filter(d => !updatingKeys.has(String(d[pk])))
       : [];
 
-    // Accumulates docs that were already written this loop iteration
     const writtenThisEdit: Record<string, unknown>[] = [];
 
     for (const doc of toUpdate) {
@@ -1272,7 +1376,6 @@ export class eveloDB {
       const updated: Record<string, unknown> = { ...doc, ...newData, [pk]: doc[pk] };
 
       if (this.config.noRepeat) {
-        // FIX: check against both untouched records AND already-written records
         const checkPool = [...baseSnapshot, ...writtenThisEdit];
         if (this.isDuplicateInArray(checkPool, updated, pk)) {
           skippedDuplicates++;
@@ -1283,7 +1386,7 @@ export class eveloDB {
       h.store.tombstone(entry.offset);
       const { offset, len } = h.store.append(updated);
       h.index.update({ key, offset, len });
-      writtenThisEdit.push(updated); // FIX: track for subsequent iteration checks
+      writtenThisEdit.push(updated);
       modifiedCount++;
     }
 
@@ -1346,9 +1449,14 @@ export class eveloDB {
     if (this.config.encode === 'bson') return this.bsonCreate(collection, { ...data });
 
     // JSON path
+    const vpk = this.virtualPkName();
+    if (vpk && vpk !== '_id' && data[vpk] !== undefined) {
+      return { err: `autoPrimaryKey "${vpk}" cannot be an existing key in the data object`, code: 'INVALID_KEY' };
+    }
+
     const db = this.readJson(collection);
     const pk = this.pkName();
-    const object: Record<string, unknown> = { ...data };
+    const object: Record<string, unknown> = this.mapToInternal(data);
 
     if (this.config.noRepeat) {
       if (this.isDuplicateInArray(db, object, pk))
@@ -1358,7 +1466,7 @@ export class eveloDB {
     if (!object[pk]) object[pk] = this.generateUniqueId();
     db.push(object);
     this.writeJson(collection, db);
-    return { success: true, [pk]: object[pk] };
+    return { success: true, [vpk || pk]: object[pk] };
   }
 
   delete(collection: string, conditions: Conditions): DeleteResult {
@@ -1367,10 +1475,11 @@ export class eveloDB {
 
     if (this.config.encode === 'bson') return this.bsonDelete(collection, conditions);
 
+    const internalConditions = this.mapConditionsToInternal(conditions);
     const p = this.getJsonPath(collection);
     if (!fs.existsSync(p)) return { err: 'Not found', code: 404 };
     const db = this.readJson(collection);
-    const filtered = db.filter(item => !this.matchesConditions(item, conditions));
+    const filtered = db.filter(item => !this.matchesConditions(item, internalConditions));
     this.writeJson(collection, filtered);
     return { success: true, deletedCount: db.length - filtered.length };
   }
@@ -1379,12 +1488,16 @@ export class eveloDB {
     if (!collection) return new QueryResult<T>(null, 'collection required!');
     if (!conditions) return new QueryResult<T>(null, 'conditions required!');
 
-    if (this.config.encode === 'bson')
-      return new QueryResult<T>(this.bsonFind(collection, conditions) as unknown as T[]);
+    const internalConditions = this.mapConditionsToInternal(conditions);
+    if (this.config.encode === 'bson') {
+      const results = this.bsonFind(collection, internalConditions);
+      return new QueryResult<T>(results.map(doc => this.mapToExternal(doc)) as unknown as T[]);
+    }
 
     const db = this.readJson(collection);
     return new QueryResult<T>(
-      db.filter(item => this.matchesConditions(item, conditions)) as unknown as T[]
+      db.filter(item => this.matchesConditions(item, internalConditions))
+        .map(item => this.mapToExternal(item)) as unknown as T[]
     );
   }
 
@@ -1395,11 +1508,15 @@ export class eveloDB {
     if (!collection) return { err: 'collection required!' };
     if (!conditions) return { err: 'conditions required!' };
 
-    if (this.config.encode === 'bson')
-      return (this.bsonFindOne(collection, conditions) as unknown as T) ?? null;
+    const internalConditions = this.mapConditionsToInternal(conditions);
+    if (this.config.encode === 'bson') {
+      const found = this.bsonFindOne(collection, internalConditions);
+      return found ? (this.mapToExternal(found) as unknown as T) : null;
+    }
 
     const db = this.readJson(collection);
-    return (db.find(item => this.matchesConditions(item, conditions)) ?? null) as T | null;
+    const found = db.find(item => this.matchesConditions(item, internalConditions));
+    return found ? (this.mapToExternal(found) as unknown as T) : null;
   }
 
   get<T = Record<string, unknown>>(collection: string): QueryResult<T> {
@@ -1408,7 +1525,8 @@ export class eveloDB {
     if (this.config.encode === 'bson')
       return new QueryResult<T>(this.bsonAll(collection) as unknown as T[]);
 
-    return new QueryResult<T>(this.readJson(collection) as unknown as T[]);
+    const db = this.readJson(collection);
+    return new QueryResult<T>(db.map(item => this.mapToExternal(item)) as unknown as T[]);
   }
 
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
@@ -1418,6 +1536,7 @@ export class eveloDB {
 
     if (this.config.encode === 'bson') return this.bsonEdit(collection, conditions, newData);
 
+    const internalConditions = this.mapConditionsToInternal(conditions);
     const p = this.getJsonPath(collection);
     if (!fs.existsSync(p)) return { err: 'Collection not found', code: 404 };
 
@@ -1426,7 +1545,7 @@ export class eveloDB {
     let modifiedCount = 0, skippedDuplicates = 0;
 
     const updatedDb = db.map(item => {
-      if (!this.matchesConditions(item, conditions)) return item;
+      if (!this.matchesConditions(item, internalConditions)) return item;
       const updated = { ...item, ...newData, [pk]: item[pk] };
       if (this.config.noRepeat) {
         if (this.isDuplicateInArray(db, updated, pk, String(item[pk]))) {
@@ -1471,26 +1590,25 @@ export class eveloDB {
     if (!collection) return new QueryResult<T>(null, 'collection required!');
     if (!conditions) return new QueryResult<T>(null, 'conditions required!');
 
+    const internalConditions = this.mapConditionsToInternal(conditions as Conditions);
     const pk = this.pkName();
 
-    // FIX: if searching by primary key with a plain value, use the index fast path
     if (
       this.config.encode === 'bson' &&
-      conditions[pk] !== undefined &&
-      typeof conditions[pk] === 'string'
+      internalConditions[pk] !== undefined &&
+      typeof internalConditions[pk] === 'string'
     ) {
       const h = this.getHandle(collection);
-      const entry = h.index.find(String(conditions[pk]));
+      const entry = h.index.find(String(internalConditions[pk]));
       if (!entry) return new QueryResult<T>([]);
       const doc = h.store.read(entry.offset, entry.len);
       if (!doc) return new QueryResult<T>([]);
 
-      // Still apply any remaining search conditions
       const otherConditions = Object.fromEntries(
-        Object.entries(conditions).filter(([k]) => k !== pk)
+        Object.entries(internalConditions).filter(([k]) => k !== pk)
       );
       if (Object.keys(otherConditions).length === 0)
-        return new QueryResult<T>([doc] as unknown as T[]);
+        return new QueryResult<T>([this.mapToExternal(doc)] as unknown as T[]);
 
       const matches = Object.entries(otherConditions).every(([key, value]) => {
         const field = doc[key];
@@ -1503,16 +1621,15 @@ export class eveloDB {
         return String(field).toLowerCase().includes(String(value).toLowerCase());
       });
 
-      return new QueryResult<T>(matches ? [doc] as unknown as T[] : []);
+      return new QueryResult<T>(matches ? [this.mapToExternal(doc)] as unknown as T[] : []);
     }
 
-    // Full scan for non-PK searches
     const all = this.config.encode === 'bson'
-      ? this.bsonAll(collection)
+      ? this.bsonAllInternal(collection)
       : this.readJson(collection);
 
     const results = all.filter(item =>
-      Object.entries(conditions).every(([key, value]) => {
+      Object.entries(internalConditions).every(([key, value]) => {
         const field = item[key];
         if (field == null) return false;
         if (value && typeof value === 'object' && (value as Condition).$regex) {
@@ -1522,7 +1639,7 @@ export class eveloDB {
         }
         return String(field).toLowerCase().includes(String(value).toLowerCase());
       })
-    );
+    ).map(item => this.mapToExternal(item));
 
     return new QueryResult<T>(results as unknown as T[]);
   }
@@ -1584,9 +1701,10 @@ export class eveloDB {
           : [{ saved_plain_data: 'bson', data }];
 
         for (const doc of records) {
-          if (!doc[pk]) doc[pk] = this.generateUniqueId();
-          const { offset, len } = handle.store.append(doc);
-          const key = String(doc[pk]);
+          const internalDoc = this.mapToInternal(doc);
+          if (!internalDoc[pk]) internalDoc[pk] = this.generateUniqueId();
+          const { offset, len } = handle.store.append(internalDoc);
+          const key = String(internalDoc[pk]);
           handle.index.insert({ key, offset, len });
         }
         handle.index.flush();
@@ -1625,6 +1743,9 @@ export class eveloDB {
       const all = this.bsonAll(collection);
       if (Array.isArray(all) && all.length === 1) {
         const item = all[0];
+        // Note: bsonAll already calls mapToExternal, but saved_plain_data
+        // records might need special handling if we want to return the raw data
+        // without virtual mapping applied to the wrapper.
         if (item && item.saved_plain_data === 'bson') {
           return item.data;
         }
@@ -1637,7 +1758,11 @@ export class eveloDB {
       const decrypted = this.config.encryption ? this.decryptData(raw) : raw;
       if (typeof decrypted !== 'string') return decrypted;
       try {
-        return JSON.parse(decrypted);
+        const parsed = JSON.parse(decrypted);
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => this.mapToExternal(item));
+        }
+        return parsed;
       } catch {
         return decrypted;
       }
@@ -1671,9 +1796,7 @@ export class eveloDB {
     const toEncode = to.encode ?? this.config.encode;
 
     // FIX: resolve the primary key name from config, not hardcoded '_id'/'id'
-    const pkField = typeof this.config.autoPrimaryKey === 'string' && this.config.autoPrimaryKey.length > 0
-      ? this.config.autoPrimaryKey
-      : '_id';
+    const pkField = '_id';
 
     if (!fs.existsSync(toDir)) fs.mkdirSync(toDir, { recursive: true });
 

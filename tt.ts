@@ -1,4 +1,4 @@
-import EveDB, { type EveloDBConfig } from "./publish/evelodb";
+import EveDB, { type EveloDBConfig } from "./npm-ultra/evelodb";
 
 const config: EveloDBConfig = {
     extension: "db",
@@ -7,7 +7,7 @@ const config: EveloDBConfig = {
     encryption: null,
     encryptionKey: null,
     noRepeat: true,
-    autoPrimaryKey: true,
+    autoPrimaryKey: "fuck",
     objectId: false,
 }
 
@@ -32,32 +32,32 @@ const db = new EveDB(config);
 console.log(a); */
 const c = db.readData("ffff");
 const ca = db.writeData("ffff", [
-  {
-    contentHash: 'e3b0c44298fc1c14',
-    extension: 'png',
-    mimeType: 'image/png',
-    fileSize: 2048,
-    checksum: 'crc32:ab3f9921',
-    createdAt: '2006-07-13T00:00:00Z',
-    expireAt: null,
-    lastAccessedAt: '2006-07-13T00:00:00Z',
-    tokenCount: 1,
-    totalAccessCount: 42,
-    fuck: 'moiawql7adobcvib'
-  },
-  {
-    contentHash: '4298fc1c14',
-    extension: 'mp4',
-    mimeType: 'video/mp4',
-    fileSize: 2048,
-    checksum: 'crc32:ab3f9921',
-    createdAt: '2006-07-13T00:00:00Z',
-    expireAt: null,
-    lastAccessedAt: '2006-07-13T00:00:00Z',
-    tokenCount: 2,
-    totalAccessCount: 42,
-    fuck: 'moiayynnuqmwrx17'
-  }
+    {
+        contentHash: 'e3b0c44298fc1c14',
+        extension: 'png',
+        mimeType: 'image/png',
+        fileSize: 2048,
+        checksum: 'crc32:ab3f9921',
+        createdAt: '2006-07-13T00:00:00Z',
+        expireAt: null,
+        lastAccessedAt: '2006-07-13T00:00:00Z',
+        tokenCount: 1,
+        totalAccessCount: 42,
+        fuck: 'moiawql7adobcvib'
+    },
+    {
+        contentHash: '4298fc1c14',
+        extension: 'mp4',
+        mimeType: 'video/mp4',
+        fileSize: 2048,
+        checksum: 'crc32:ab3f9921',
+        createdAt: '2006-07-13T00:00:00Z',
+        expireAt: null,
+        lastAccessedAt: '2006-07-13T00:00:00Z',
+        tokenCount: 2,
+        totalAccessCount: 42,
+        fuck: 'moiayynnuqmwrx17'
+    }
 ])
 //const c = db.findOne("ffff", { fuck: 'moiayynnuqmwrx17' })
 console.log(c);

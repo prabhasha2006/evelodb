@@ -822,7 +822,7 @@ const res = db.changeConfig({
 
 <a id="changelog"></a>
 # 📈 Changelog
-- 1.4.11
+- 1.4.17
   - **🚀 High-Performance B-Tree Indexing**: Introduced `.bidx` files for O(log n) lookups. Primary key searches are now nearly instant regardless of database size.
   - **🛡️ Write-Ahead Logging (WAL)**: Added `.wal` files to ensure data integrity. Changes are logged before being committed, allowing recovery from crashes.
   - **♻️ Auto-Compaction**: BSON collections now automatically reclaim disk space when the fragmentation (tombstone) ratio exceeds a configurable threshold.

@@ -3,5 +3,7 @@
 # dependencies
 /node_modules
 /evelodatabase
-/publish/node_modules
-/publish/dist
+/npm/node_modules
+/npm/dist
+/npm-ultra/node_modules
+/npm-ultra/dist
