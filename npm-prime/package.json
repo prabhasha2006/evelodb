@@ -1,5 +1,5 @@
 {
-  "name": "evelodb-ultra",
+  "name": "evelodb-prime",
   "version": "1.0.0-beta.0",
   "description": "A large scale database management system with nodejs. Made by Evelocore. With B-tree Operations.",
   "main": "dist/cjs/evelodb.js",

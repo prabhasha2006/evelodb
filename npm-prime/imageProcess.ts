@@ -10,6 +10,8 @@ interface ImageProcessConfig {
     invert?: boolean;
     brightness?: number;
     contrast?: number;
+    maxWidth?: number | null;
+    maxHeight?: number | null;
 }
 
 const defaultConfig: Required<ImageProcessConfig> = {
@@ -22,6 +24,8 @@ const defaultConfig: Required<ImageProcessConfig> = {
     invert: false,
     brightness: 1,
     contrast: 1,
+    maxWidth: null,
+    maxHeight: null,
 };
 
 function getMimeType(fileExtension: string): string {
@@ -87,18 +91,23 @@ async function imageProcess(
 
     if (config.pixels > 0) {
         const currentPixels = (metadata.width ?? 0) * (metadata.height ?? 0);
-
         if (currentPixels > config.pixels) {
             const scaleFactor = Math.sqrt(config.pixels / currentPixels);
             const newWidth = Math.round((metadata.width ?? 0) * scaleFactor);
             const newHeight = Math.round((metadata.height ?? 0) * scaleFactor);
-
             image = image.resize(newWidth, newHeight, {
                 fit: 'inside',
                 withoutEnlargement: true,
                 kernel: sharp.kernel.lanczos3,
             });
         }
+    }
+
+    if (config.maxWidth || config.maxHeight) {
+        image = image.resize(config.maxWidth || undefined, config.maxHeight || undefined, {
+            fit: 'inside',
+            withoutEnlargement: true,
+        });
     }
 
     type SharpFormat = Parameters<sharp.Sharp['toFormat']>[0];

@@ -13,7 +13,6 @@
   },
   "include": [
     "evelodb.ts",
-    "encryption.ts",
     "imageProcess.ts"
   ]
 }
