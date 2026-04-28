@@ -22,6 +22,7 @@
 - [🔢 Comparison Operators](#comparison-operators)
 - [⚙️ Operations](#operations)
 - [🔍 Get Query Result](#query-result)
+- [💾 Backup Data](#backup)
 - [📁 Store Files](#filehandle)
 - [🖼️ Image Utilities](#filehandleimg)
 - [💡 Features](#features)
@@ -177,6 +178,24 @@ result.sort((a, b) => ...);    // Sorts the result set
 
 <br><br>
 
+<a id="backup"></a>
+# 💾 Backup Data
+Export your collection data for safekeeping or migration.
+
+```js
+// Backup as JSON
+db.createBackup('users', {
+    type: 'json',
+    path: './backups'
+});
+
+// Backup as raw .db file
+db.createBackup('users', {
+    type: 'db',
+    path: './backups'
+});
+```
+
 
 <br><br>
 
@@ -238,6 +257,7 @@ const img = await db.readImage('avatar.jpg', {
 - Removed **AI Analyse** (Google GenAI) integration.
 - Added **Secondary Indexes** support for high-speed custom field lookups.
 - Added **Unique Key** constraints.
+- Added **Backup** system (JSON/DB formats).
 
 <br><br>
 

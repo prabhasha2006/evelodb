@@ -31,6 +31,12 @@ export interface WriteResult {
   _id?: string;
 }
 
+export interface BackupResult {
+  success: boolean;
+  err?: string;
+  backupPath?: string;
+}
+
 export interface DeleteResult {
   success?: boolean;
   err?: string;
@@ -134,6 +140,7 @@ export class eveloDB {
   readFile(name: string): FileResult;
   readImage(name: string, config?: ReadImageConfig): Promise<ReadImageResult>;
   deleteFile(name: string): FileResult;
+  createBackup(collection: string, config: { type: 'json' | 'db'; path: string }): BackupResult;
   closeAll(): void;
 }
 

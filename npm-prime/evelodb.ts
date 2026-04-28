@@ -37,6 +37,13 @@ export interface WriteResult {
   _id?: string | ObjectId;
 }
 
+
+export interface BackupResult {
+  success: boolean;
+  err?: string;
+  backupPath?: string;
+}
+
 export interface DeleteResult {
   success?: boolean;
   err?: string;
@@ -61,7 +68,7 @@ export interface CountResult {
 export interface DropResult {
   success?: boolean;
   err?: string | number;
-  code?: number;
+  code?: string | number;
   deletedCount?: number;
   message?: string;
 }
@@ -1146,6 +1153,30 @@ export class eveloDB {
     if (!fs.existsSync(p)) return { err: 'Not found', code: 404 };
     try { fs.unlinkSync(p); return { success: true }; }
     catch (e) { return { err: (e as Error).message }; }
+  }
+
+  createBackup(collection: string, config: { type: 'json' | 'db'; path: string }): BackupResult {
+    if (!collection || !config.path) return { success: false, err: 'Invalid request' };
+    try {
+      if (!fs.existsSync(config.path)) fs.mkdirSync(config.path, { recursive: true });
+      const now = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${collection}_backup_${now}`;
+      
+      if (config.type === 'json') {
+        const data = this.get(collection).all();
+        const fullPath = path.join(config.path, `${filename}.json`);
+        fs.writeFileSync(fullPath, JSON.stringify(data, null, 2));
+        return { success: true, backupPath: fullPath };
+      } else {
+        const { dataPath } = this.getBsonPaths(collection);
+        if (!fs.existsSync(dataPath)) return { success: false, err: 'Collection file not found' };
+        const fullPath = path.join(config.path, `${filename}.db`);
+        fs.copyFileSync(dataPath, fullPath);
+        return { success: true, backupPath: fullPath };
+      }
+    } catch (e) {
+      return { success: false, err: (e as Error).message };
+    }
   }
 }
 
