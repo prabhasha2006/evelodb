@@ -61,7 +61,7 @@ export interface CountResult {
 export interface DropResult {
   success?: boolean;
   err?: string | number;
-  code?: number;
+  code?: number | string;
   deletedCount?: number;
   message?: string;
 }
@@ -110,6 +110,17 @@ export interface Condition {
 
 export type Conditions = Record<string, unknown | Condition>;
 
+export interface BackupFileInfo {
+  success: boolean;
+  err?: string;
+  title?: string;
+  protected?: boolean;
+  schema?: any;
+  length?: number;
+  data: any[];
+  created?: Date;
+}
+
 export class QueryResult<T = unknown> {
   data: T[];
   err?: string;
@@ -140,7 +151,9 @@ export class eveloDB {
   readFile(name: string): FileResult;
   readImage(name: string, config?: ReadImageConfig): Promise<ReadImageResult>;
   deleteFile(name: string): FileResult;
-  createBackup(collection: string, config: { type: 'json' | 'db'; path: string }): BackupResult;
+  createBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; path: string; password?: string; title?: string }): BackupResult;
+  restoreBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; file: string; password?: string }): { success: boolean; err?: string };
+  readBackupFile(filePath: string, password?: string): BackupFileInfo;
   closeAll(): void;
 }
 

@@ -27,7 +27,26 @@ const config: EveloDBConfig = {
 
 const db = new EveDB(config);
 
-console.log("--- Testing Valid Create ---");
+db.createBackup("users", {
+    type: "json",
+    path: "./backups"
+});
+db.createBackup("users", {
+    type: "binary",
+    path: "./backups",
+    password: "[PASSWORD]",
+});
+db.restoreBackup("users", {
+    type: "binary",
+    path: "./backups",
+    filename: "users_backup_2026-04-28T11-18-13-082Z.db",
+    password: "[PASSWORD]",
+    title: "Users collection of online store app"
+});
+
+
+
+/* console.log("--- Testing Valid Create ---");
 const a = db.create("users", {
     username: "johndoe",
     email: "john@example.com",
@@ -78,4 +97,4 @@ const afterDelete = db.find("users", { username: "johndoe" }).all();
 console.log("Found after delete (should be empty):", afterDelete);
 
 const all = db.get("users").all();
-console.log("\nFinal Records in DB:", all);
+console.log("\nFinal Records in DB:", all); */

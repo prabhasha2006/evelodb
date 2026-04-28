@@ -178,21 +178,64 @@ result.sort((a, b) => ...);    // Sorts the result set
 
 <br><br>
 
-<a id="backup"></a>
 # 💾 Backup Data
 Export your collection data for safekeeping or migration.
 
 ```js
-// Backup as JSON
+// 1. Backup as Secure Binary (Encrypted with XOR)
+db.createBackup('users', {
+    type: 'binary',
+    path: './backups',
+    password: 'my_secret_password',
+    title: 'User Records April 2026'
+});
+
+// 2. Backup as JSON (Includes Schema & Collection info)
 db.createBackup('users', {
     type: 'json',
     path: './backups'
 });
 
-// Backup as raw .db file
+// 3. Backup as raw .db file
 db.createBackup('users', {
     type: 'db',
     path: './backups'
+});
+```
+
+# 🔍 Read Backup Info
+Inspect a backup file without restoring it.
+
+```js
+const info = db.readBackupFile('./backups/users_backup.backup', 'my_secret_password');
+console.log(info.title);   // 'User Records April 2026'
+console.log(info.data);    // [ {...}, {...} ]
+```
+
+# 🔄 Restore Backup
+Restore a collection from a previous backup. 
+
+> [!WARNING]
+> Restoring a backup will overwrite current data in the collection.
+
+```js
+// Restore from Binary (Requires password if protected)
+db.restoreBackup('users', {
+    type: 'binary',
+    file: './backups/users_backup.backup',
+    password: 'my_secret_password'
+});
+
+// Restore from JSON
+db.restoreBackup('users', {
+    type: 'json',
+    file: './backups/users_backup.json'
+});
+
+// Restore from raw .db file
+db.restoreBackup('users', {
+    type: 'db',
+    file: './backups/users_backup.db'
 });
 ```
 

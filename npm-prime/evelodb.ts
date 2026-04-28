@@ -1,7 +1,9 @@
 import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 import { BSON, ObjectId } from 'bson';
 import imageProcess from './imageProcess.js';
-import * as path from 'path';
+import { BackupManager } from './backup.js';
 
 // ─── Type Definitions ──────────────────────────────────────────────────────────
 
@@ -647,11 +649,13 @@ interface CollectionHandle {
 export class eveloDB {
   config: Required<EveloDBConfig>;
   private handles: Map<string, CollectionHandle> = new Map();
+  private backupManager: BackupManager;
 
   constructor(config: EveloDBConfig = {}) {
     this.config = { ...defaultConfig, ...config };
     if (!fs.existsSync(this.config.directory))
       fs.mkdirSync(this.config.directory, { recursive: true });
+    this.backupManager = new BackupManager(this);
   }
 
   private getBsonPaths(collection: string): { dataPath: string; primaryIdxPath: string } {
@@ -713,6 +717,16 @@ export class eveloDB {
     if (h) {
       h.primaryIndex.flush();
       for (const idx of h.secondaryIndexes.values()) idx.flush();
+    }
+  }
+
+  private closeHandle(collection: string): void {
+    const h = this.handles.get(collection);
+    if (h) {
+      h.primaryIndex.flush();
+      for (const idx of h.secondaryIndexes.values()) idx.flush();
+      h.store.close();
+      this.handles.delete(collection);
     }
   }
 
@@ -884,7 +898,7 @@ export class eveloDB {
     const h = this.getHandle(collection);
     let deletedCount = 0;
     const toDelete = this.find(collection, conditions).all() as Record<string, unknown>[];
-    
+
     for (const doc of toDelete) {
       const pk = String(doc._id);
       const entry = h.primaryIndex.find(pk);
@@ -898,7 +912,7 @@ export class eveloDB {
         deletedCount++;
       }
     }
-    
+
     this.flushHandle(collection); this.maybeCompact(collection);
     return { success: true, deletedCount };
   }
@@ -912,7 +926,7 @@ export class eveloDB {
     if (condEntries.length > 0) {
       for (const [field, val] of condEntries) {
         if (typeof val === 'object' && val !== null) continue;
-        
+
         if (field === '_id') {
           const entry = h.primaryIndex.find(String(val));
           if (entry) {
@@ -1155,28 +1169,40 @@ export class eveloDB {
     catch (e) { return { err: (e as Error).message }; }
   }
 
-  createBackup(collection: string, config: { type: 'json' | 'db'; path: string }): BackupResult {
-    if (!collection || !config.path) return { success: false, err: 'Invalid request' };
-    try {
-      if (!fs.existsSync(config.path)) fs.mkdirSync(config.path, { recursive: true });
-      const now = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `${collection}_backup_${now}`;
-      
-      if (config.type === 'json') {
-        const data = this.get(collection).all();
-        const fullPath = path.join(config.path, `${filename}.json`);
-        fs.writeFileSync(fullPath, JSON.stringify(data, null, 2));
-        return { success: true, backupPath: fullPath };
-      } else {
-        const { dataPath } = this.getBsonPaths(collection);
-        if (!fs.existsSync(dataPath)) return { success: false, err: 'Collection file not found' };
-        const fullPath = path.join(config.path, `${filename}.db`);
-        fs.copyFileSync(dataPath, fullPath);
-        return { success: true, backupPath: fullPath };
+  createBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; path: string; password?: string; title?: string }): BackupResult {
+    return this.backupManager.createBackup(collection, config);
+  }
+
+  restoreBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; file: string; password?: string }): { success: boolean; err?: string } {
+    return this.backupManager.restoreBackup(collection, config);
+  }
+
+  readBackupFile(filePath: string, password?: string): any {
+    return this.backupManager.readBackupFile(filePath, password);
+  }
+
+  public rebuildIndexes(collection: string) {
+    const { primaryIdxPath } = this.getBsonPaths(collection);
+    const schema = this.config.schema?.[collection];
+    const toDelete = [primaryIdxPath];
+    if (schema?.indexes) {
+      for (const field of schema.indexes) {
+        if (field === '_id') continue;
+        toDelete.push(path.join(this.config.directory, `${collection}.${field}.bidx`));
       }
-    } catch (e) {
-      return { success: false, err: (e as Error).message };
     }
+    for (const p of toDelete) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+    const h = this.getHandle(collection);
+    for (const { offset, len, doc } of h.store.scan()) {
+      const key = String(doc._id ?? '');
+      if (key) {
+        h.primaryIndex.insert({ key, offset, len });
+        for (const [field, idx] of h.secondaryIndexes) {
+          if (doc[field] !== undefined) idx.insert({ key: String(doc[field]), offset, len });
+        }
+      }
+    }
+    this.flushHandle(collection);
   }
 }
 
