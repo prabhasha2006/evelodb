@@ -877,11 +877,35 @@ export class eveloDB {
         }
       }
     }
+    // Check for unknown fields (only if not a recursive call for nested object)
+    if (!schemaOverride) {
+      const schemaKeys = new Set(Object.keys(fields));
+      const internalKeys = ['_id', '_createdAt', '_modifiedAt', this.getObjectIdKey(collection)];
+      for (const key of Object.keys(doc)) {
+        if (!schemaKeys.has(key) && !internalKeys.includes(key)) {
+          return { valid: false, err: `Field '${key}' is not defined in schema` };
+        }
+      }
+    } else {
+      // For nested objects, we also check for unknown fields
+      const schemaKeys = new Set(Object.keys(fields));
+      for (const key of Object.keys(doc)) {
+        if (!schemaKeys.has(key)) {
+          return { valid: false, err: `Field '${key}' is not defined in schema` };
+        }
+      }
+    }
+
     return { valid: true };
   }
 
   create(collection: string, data: Record<string, unknown>): WriteResult {
     if (!collection || !data || typeof data !== 'object') return { err: 'Invalid request' };
+    
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return { err: `Collection '${collection}' is not defined in schema`, code: 'COLLECTION_NOT_DEFINED' };
+    }
 
     const idKey = this.getObjectIdKey(collection);
     const forbidden = ['_id', '_createdAt', '_modifiedAt'];
@@ -939,6 +963,11 @@ export class eveloDB {
 
   delete(collection: string, conditions: Conditions): DeleteResult {
     if (!collection || !conditions) return { err: 'Invalid request' };
+
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return { err: `Collection '${collection}' is not defined in schema`, code: 'COLLECTION_NOT_DEFINED' };
+    }
     const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
     const h = this.getHandle(collection);
     let deletedCount = 0;
@@ -964,6 +993,11 @@ export class eveloDB {
 
   find<T = Record<string, unknown>>(collection: string, conditions: Conditions, raw: boolean = false): QueryResult<T> {
     if (!collection || !conditions) return new QueryResult<T>(null, 'Invalid request');
+
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return new QueryResult<T>(null, `Collection '${collection}' is not defined in schema`);
+    }
     const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
     const h = this.getHandle(collection);
     const condEntries = Object.entries(mappedConditions);
@@ -1017,6 +1051,11 @@ export class eveloDB {
 
   get<T = Record<string, unknown>>(collection: string): QueryResult<T> {
     if (!collection) return new QueryResult<T>(null, 'collection required!');
+
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return new QueryResult<T>(null, `Collection '${collection}' is not defined in schema`);
+    }
     const h = this.getHandle(collection), results: T[] = [];
     for (const e of h.primaryIndex.allEntries()) {
       const doc = h.store.read(e.offset, e.len);
@@ -1027,6 +1066,11 @@ export class eveloDB {
 
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
     if (!collection || !conditions || !newData) return { err: 'Invalid request' };
+
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return { err: `Collection '${collection}' is not defined in schema`, code: 'COLLECTION_NOT_DEFINED' };
+    }
     
     const idKey = this.getObjectIdKey(collection);
     const forbidden = ['_id', '_createdAt', '_modifiedAt'];
@@ -1108,6 +1152,11 @@ export class eveloDB {
 
   search<T = Record<string, unknown>>(collection: string, conditions: Record<string, unknown>, raw: boolean = false): QueryResult<T> {
     if (!collection || !conditions) return new QueryResult<T>(null, 'Invalid request');
+
+    // Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return new QueryResult<T>(null, `Collection '${collection}' is not defined in schema`);
+    }
     const mappedConditions = this.mapInput(collection, conditions);
     const pkVal = mappedConditions._id;
     if (pkVal !== undefined && typeof pkVal === 'string') {

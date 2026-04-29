@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a><img src="https://cdn.evelocore.com/files/Evelocore/projects/evelodb/icon.png" width="200"></a>
+  <a><img src="https://cdn.evelocore.com/files/Evelocore/projects/evelodb-prime/icon.png" width="200"></a>
   <br>
   <b>EveloDB Prime</b>
   <br>

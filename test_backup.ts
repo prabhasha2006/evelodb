@@ -4,7 +4,6 @@ import * as path from 'path';
 
 const config: EveloDBConfig = {
     directory: "./evelodb_backup_test",
-    noRepeat: true,
     schema: {
         users: {
             fields: {
@@ -15,7 +14,8 @@ const config: EveloDBConfig = {
             },
             indexes: ["email"],
             uniqueKeys: ["email"],
-            objectIdKey: "user"
+            objectIdKey: "user",
+            noRepeat: true
         }
     }
 }
