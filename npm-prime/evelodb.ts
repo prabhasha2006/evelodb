@@ -905,11 +905,8 @@ export class eveloDB {
     }
 
     const idKey = this.getObjectIdKey(collection);
-    const forbidden = ['_id', '_createdAt', '_modifiedAt'];
-    if (idKey !== '_id') forbidden.push(idKey);
-    for (const key of forbidden) {
-      if (key in data) return { err: `Field '${key}' is auto-generated and cannot be set manually`, code: 'FORBIDDEN_FIELD' };
-    }
+    const forbidden = ['_id', '_createdAt', '_modifiedAt', idKey];
+    for (const key of forbidden) if (key) delete data[key];
 
     const mappedData = this.mapInput(collection, data);
     const schemaRes = this.validateSchema(collection, mappedData as Record<string, unknown>);
@@ -1071,11 +1068,8 @@ export class eveloDB {
     }
     
     const idKey = this.getObjectIdKey(collection);
-    const forbidden = ['_id', '_createdAt', '_modifiedAt'];
-    if (idKey !== '_id') forbidden.push(idKey);
-    for (const key of forbidden) {
-      if (key in newData) return { err: `Field '${key}' is auto-generated and cannot be set manually`, code: 'FORBIDDEN_FIELD' };
-    }
+    const forbidden = ['_id', '_createdAt', '_modifiedAt', idKey];
+    for (const key of forbidden) if (key) delete newData[key];
 
     const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
     const mappedNewData = this.mapInput(collection, newData);
