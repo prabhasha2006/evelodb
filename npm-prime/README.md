@@ -20,7 +20,7 @@
 - [📥 Installation](#installation)
 - [📘 TypeScript / ES Modules](#typescript)
 - [🔢 Comparison Operators](#comparison-operators)
-- [⚙️ Configuration](#configuration)
+- [🛠️ Configuration](#configuration)
 - [⚙️ Operations](#operations)
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
