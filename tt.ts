@@ -6,7 +6,7 @@ const config: EveloDBConfig = {
     schema: {
         users: {
             fields: {
-                username: { type: String, required: true, min: 5, max: 30 },
+                username: { type: String, required: true, max: 30 },
                 email: { type: String, required: true },
                 name: { type: String, required: true, min: 5, max: 30 },
                 age: { type: Number, required: true, min: 18, max: 90 },

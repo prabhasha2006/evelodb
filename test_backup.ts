@@ -13,7 +13,8 @@ const config: EveloDBConfig = {
                 age: { type: Number, required: true }
             },
             indexes: ["email"],
-            uniqueKeys: ["email"]
+            uniqueKeys: ["email"],
+            objectIdKey: "_id"
         }
     }
 }
