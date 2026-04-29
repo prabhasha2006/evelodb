@@ -22,7 +22,6 @@
 - [🔢 Comparison Operators](#comparison-operators)
 - [⚙️ Configuration](#configuration)
 - [⚙️ Operations](#operations)
-
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
 - [📁 Store Files](#filehandle)
@@ -263,19 +262,139 @@ const user = db.findOne('users', { userId: '662e5a4e3d5a4e3d5a4e3d5a' });
 const result = db.find('users', { age: { $gt: 18 } });
 ```
 
+### Search
+Performs a case-insensitive "contains" search on fields. Useful for autocomplete or simple text matching.
+```js
+// Matches "John", "johnny", "Elton John", etc.
+const results = db.search('users', { username: 'john' });
+```
+
+### Get
+Retrieves all records from a collection. Returns a `QueryResult`.
+```js
+const allData = db.get('users').all();
+```
+
+### Count
+Returns the total number of records in a collection.
+```js
+const { count } = db.count('users');
+```
+
+### Check
+Checks if at least one record exists that matches the conditions. Returns `boolean`.
+```js
+const exists = db.check('users', { email: 'john@example.com' });
+```
+
+### Drop / Reset
+Permanently deletes a collection and all its associated index files.
+```js
+db.drop('users'); 
+// or
+db.reset('users');
+```
+
+### Compact
+Manually triggers the compaction process to reclaim storage space used by deleted or updated records.
+```js
+db.compact('users');
+```
+
+### Rebuild Indexes
+Rebuilds all B-Tree indexes (primary and secondary) for a collection from the raw data. Useful for recovery if index files are corrupted or missing.
+```js
+db.rebuildIndexes('users');
+```
+
+### Close All
+Closes all open collection handles and ensures all data/indexes are flushed to the disk.
+```js
+db.closeAll();
+```
+
 <br><br>
 
 <a id="query-result"></a>
 # 🔍 Get Query Result
-Methods to handle and format the results from `find`, `get`, or `search`.
+This is a wrapper that provides chainable methods for working with query results in eveloDB. It enables pagination, sorting, and other data manipulation operations on query results.
 
+## Overview
+The Query Result returned by the following eveloDB methods:
+- db.find(collection, conditions)
+- db.search(collection, conditions)
+- db.get(collection) `when data is an array`
+
+## Examples
+
+### getList
+- Implements pagination by returning a subset of results.
 ```js
-const result = db.find('users', { status: 'active' });
+// Get first 10 users
+const firstPage = db.find('users', { status: 'active' }).getList(0, 10);
 
-result.all();                  // [ {..}, {..} ] - Array of all matches
-result.count();                // 25 - Total count of matches
-result.getList(0, 10);         // [ {..} x10 ] - Paginated results
-result.sort((a, b) => a.age - b.age); // Returns sorted QueryResult
+// Get next 10 users (pagination)
+const secondPage = db.find('users', { status: 'active' }).getList(10, 10);
+
+// Get 5 users starting from index 20
+const customPage = db.find('users', { status: 'active' }).getList(20, 5);
+```
+
+### count
+- Returns the total number of items in the result set.
+```js
+// Get total count of active users
+const totalActiveUsers = db.find('users', { status: 'active' }).count();
+
+// Get count of search results
+const searchCount = db.search('products', { name: 'phone' }).count();
+
+// Use for pagination info
+const results = db.find('orders', { status: 'pending' });
+const total = results.count();
+const currentPage = results.getList(0, 20);
+console.log(`Showing ${currentPage.length} of ${total} results`);
+```
+
+### sort
+- Sorts the results using a comparison function.
+```js
+// Sort by name (ascending)
+const sortedByName = db.find('users', { status: 'active' })
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+// Sort by age (descending)
+const sortedByAge = db.find('users', { status: 'active' })
+    .sort((a, b) => b.age - a.age)
+    .getList(0, 20);
+
+// Sort by date (newest first)
+const sortedByDate = db.find('posts', { published: true })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .getList(0, 10);
+```
+
+## Method Chaining
+One of the key features of QueryResult is method chaining, allowing you to combine operations:
+```js
+const db = new eveloDB();
+
+// Chain multiple operations
+const result = db.find('products', { category: 'electronics' })
+    .sort((a, b) => b.price - a.price)  // Sort by price (high to low)
+    .getList(10, 5);                    // Get items 11-15
+
+// Complex chaining example
+const topExpensiveProducts = db.search('products', { name: 'laptop' })
+    .sort((a, b) => b.price - a.price)  // Sort by price descending
+    .getList(0, 3);                     // Get top 3 most expensive
+
+// Get count after sorting (count remains the same)
+const sortedResults = db.find('users', { role: 'admin' })
+    .sort((a, b) => a.name.localeCompare(b.name));
+    
+const totalCount = sortedResults.count();        // Total admins
+const firstPage = sortedResults.getList(0, 10);  // First 10 sorted admins
 ```
 
 <br><br>
@@ -351,37 +470,112 @@ db.restoreBackup('users', {
 <br><br>
 
 <a id="filehandle"></a>
-# 📁 Store Files
-EveloDB Prime also supports storing raw binary files in the `/files` subdirectory.
+# 📁 File Store
 
+> ###  EveloDB is a lightweight file storage system for handling any type of file directly in your local storage.
+
+- File Management – Read, write, and delete files easily.
+- Image Utilities – Special functions to process images (resize, compress, transform, ...).
+- Lightweight & Fast – No external database required, works directly with the file system.
+
+### Store image buffer as image.jpg
 ```js
-const buffer = fs.readFileSync('image.jpg');
+db.writeFile('image.jpg', imageBuffer)
+```
+```bash
+{ success: true }
+```
 
-db.writeFile('avatar.jpg', buffer); // { success: true }
-db.readFile('avatar.jpg');          // { success: true, data: <Buffer ...> }
-db.deleteFile('avatar.jpg');        // { success: true }
-db.allFiles();                      // ['avatar.jpg', 'doc.pdf']
+### Read image.jpg
+```js
+db.readFile('image.jpg')
+```
+```bash
+{
+  success: true,
+  data: <Buffer ff d8 ff e0 00 10 ...>
+}
+```
+
+### Delete profile.pdf
+```js
+db.deleteFile('profile.pdf')
+```
+```bash
+{ success: true }
+```
+
+### List all files
+```js
+db.allFiles() // ['image.jpg', 'profile.pdf']
 ```
 
 <br><br>
 
 <a id="filehandleimg"></a>
 # 🖼️ Image Utilities
-Advanced image processing including resizing, filters, and optimization.
 
+> ### EveloDB includes built-in utilities to read and process images with ease.
+
+- Resize by pixels or max width/height
+- Adjust brightness & contrast
+- Apply filters (invert, mirror, flip)
+- Control quality and output format
+- Return as Buffer or Base64
+
+### ⚙️ Parameters
+
+| Parameter       | Type    | Default | Description |
+|-----------------|---------|---------|-------------|
+| `returnBase64`  | Boolean | `true`  | If `true`, returns a Base64 Data URL. Otherwise returns a `Buffer`. |
+| `quality`       | Number  | `1`     | Output quality (0.1 – 1). Lower values reduce size. |
+| `pixels`        | Number  | `0`     | Maximum total pixels. `0` = keep original size. Useful for scaling down large images. |
+| `maxWidth`      | Number  | `null`  | Maximum width in pixels. |
+| `maxHeight`     | Number  | `null`  | Maximum height in pixels. |
+| `blackAndWhite` | Boolean | `false` | Converts the image to grayscale. |
+| `mirror`        | Boolean | `false` | Flips the image horizontally. |
+| `upToDown`      | Boolean | `false` | Flips the image vertically. |
+| `invert`        | Boolean | `false` | Inverts image colors. |
+| `brightness`    | Number  | `1`     | Brightness multiplier (`0.1 – 5`). `1` = original. |
+| `contrast`      | Number  | `1`     | Contrast multiplier (`0.1 – 5`). `1` = original. |
+
+### Read image.jpg with preset config
 ```js
-const img = await db.readImage('avatar.jpg', {
-    pixels: 800,       // Resize width
-    quality: 0.8,      // 0.1 to 1.0
-    blackAndWhite: true
-});
+(async () => {
+  const result = await db.readImage("image.jpg", {
+    returnBase64: true,
+    quality: 0.8,
+    pixels: 500000,
+    blackAndWhite: false,
+    mirror: false,
+    upToDown: false,
+    invert: false,
+    brightness: 1,
+    contrast: 1
+  });
+
+  console.log(result)
+})()
 ```
-> Output (`readImage`)
 ```bash
 {
   success: true,
-  data: 'data:image/jpeg;base64,...',
-  metadata: { filename: 'avatar.jpg', originalSize: 204800, ... }
+  data: "data:image/jpeg;base64,/9j/4AAQSk...",
+  metadata: {
+    filename: "image.jpg",
+    extension: ".jpg",
+    originalSize: 254399,
+    processingApplied: {
+      resized: true,
+      qualityReduced: true,
+      blackAndWhite: true,
+      mirrored: true,
+      flippedVertical: false,
+      inverted: false,
+      brightnessAdjusted: true,
+      contrastAdjusted: true
+    }
+  }
 }
 ```
 
