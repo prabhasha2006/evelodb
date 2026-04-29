@@ -1271,11 +1271,11 @@ export class eveloDB {
     catch (e) { return { err: (e as Error).message }; }
   }
 
-  createBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; path: string; password?: string; title?: string }): BackupResult {
+  createBackup(collection: string, config: { type?: 'json' | 'binary'; path: string; password?: string; title?: string }): BackupResult {
     return this.backupManager.createBackup(collection, config);
   }
 
-  restoreBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; file: string; password?: string }): { success: boolean; err?: string } {
+  restoreBackup(collection: string, config: { type?: 'json' | 'binary'; file: string; password?: string }): { success: boolean; err?: string } {
     return this.backupManager.restoreBackup(collection, config);
   }
 
