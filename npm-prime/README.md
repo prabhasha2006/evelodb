@@ -204,6 +204,10 @@ Used to filter with conditions like greater than, less than, equal, etc.
 <a id="operations"></a>
 # ⚙️ Operations
 
+> [!CAUTION]
+> **Bulk Operations:** Passing an empty object `{}` as the conditions parameter in `edit()`, `delete()`, or `find()` will target **every record** in the collection.
+> Example: `db.edit("users", {}, { status: "active" })` will update all users in the collection.
+
 ### Create
 Adds a new record to the collection.
 ```js
