@@ -12,3 +12,5 @@
 /backups
 test_*
 *_test
+*.backup
+*.db
