@@ -74,9 +74,9 @@ const db = new eveloDB({
                     required: false
                 }
             },
-            indexes: ["email", "username"], // These indexes will be created as B-Trees on the disk for faster searching
-            uniqueKeys: ["email", "username"], // These fields will be checked for uniqueness before insertion
-            objectIdKey: "userId" // This field will be the auto generated id
+            indexes: ["email", "username"],
+            uniqueKeys: ["email", "username"],
+            objectIdKey: "userId"
         },
         products: {
             fields: {
@@ -84,9 +84,9 @@ const db = new eveloDB({
                 price: { type: Number, required: true, min: 0 },
                 inStock: { type: Boolean, required: true }
             },
-            indexes: ["name"], // If not specified, it will default to [objectIdKey] or ["_id"]
-            uniqueKeys: ["name"], // If not specified, it will default to []
-            objectIdKey: "productId" // If not specified, it will default to '_id'
+            indexes: ["name"],
+            uniqueKeys: ["name"],
+            objectIdKey: "productId"
         }
     }
 });
@@ -129,6 +129,38 @@ When defining a `schema`, each collection can have `fields`, `indexes`, and `uni
 
 
 > **Note:** EveloDB Prime uses `.db` extension and `_id` as the primary key. Secondary indexes use `.field.bidx` files.
+
+
+
+> ### Easy Schema Explanation
+> #### indexes: ["email", "username"]
+> - These indexes will be created as B-Trees on the disk for faster searching
+> - If not specified, it will default to [objectIdKey] or ["_id"]
+>
+> #### uniqueKeys: ["email", "username"]
+> - These fields will be checked for uniqueness before insertion
+> - If not specified, it will default to []
+>
+> #### objectIdKey: "userId"
+> - This field will be the auto generated id
+> - If not specified, it will default to '_id'
+>
+> #### name: { type: String, required: true }
+> - 'name' is String value and required
+>
+> #### username: { type: String, required: true, min: 5, max: 30 }
+> - 'username' is String value and required
+> - minimum length is 5
+> - maximum length is 30
+>
+> #### age: { type: Number, required: true, max: 90 }
+> - 'age' is Number value and required
+> - maximum value is 90
+>
+> #### vehicle: { type: { color: { type: String, required: true }, model: { type: String, required: true } } }
+> - 'vehicle' is Object value and not required
+> - inside 'vehicle' there is 'color' and 'model' which are String value and required
+
 
 <br><br>
 

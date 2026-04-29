@@ -882,7 +882,7 @@ export class eveloDB {
 
   create(collection: string, data: Record<string, unknown>): WriteResult {
     if (!collection || !data || typeof data !== 'object') return { err: 'Invalid request' };
-    
+
     const idKey = this.getObjectIdKey(collection);
     const forbidden = ['_id', '_createdAt', '_modifiedAt'];
     if (idKey !== '_id') forbidden.push(idKey);

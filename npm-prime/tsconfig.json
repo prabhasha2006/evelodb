@@ -13,6 +13,7 @@
   },
   "include": [
     "evelodb.ts",
-    "imageProcess.ts"
+    "imageProcess.ts",
+    "backup.ts"
   ]
 }
