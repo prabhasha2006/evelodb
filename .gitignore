@@ -10,3 +10,5 @@
 /npm-prime/node_modules
 /evelodbprime_test
 /backups
+test_*
+*_test
