@@ -10,15 +10,15 @@ const config: EveloDBConfig = {
             fields: {
                 username: { type: String, required: true },
                 email: { type: String, required: true },
-                age: { type: Number, required: true }
+                age: { type: Number, required: true },
+                married: { type: Boolean, required: true },
             },
             indexes: ["email"],
-            uniqueKeys: ["email"],
-            objectIdKey: "_id"
+            uniqueKeys: ["email"]
         }
     }
 }
-    const db = new EveDB(config);
+const db = new EveDB(config);
 
 async function runTest() {
     db.drop("users"); // Start fresh
@@ -74,14 +74,16 @@ function restore() {
     /* const backupDir = path.join(__dirname, "backups");
     if (fs.existsSync(backupDir)) {
         fs.rmSync(backupDir, { recursive: true });
-    } */
+    }
 
     const v = db.readBackupFile("./backups/users_backup_2026-04-28T12-38-25-561Z.backup", "1234")
-    console.log(v)
+    console.log(v) */
+
+
+    const c1 = db.create("users", { username: "alice", email: "alice@example.com", age: 25, married: false, user: "eee" });
+    const c = db.get("users").all()
+    console.log(c)
     return
-
-
-    db.create("users", { username: "alice", email: "alice@example.com", age: 25 });
     db.create("users", { username: "bob", email: "bob@example.com", age: 30 });
     const a = db.createBackup("users", {
         type: "binary",
