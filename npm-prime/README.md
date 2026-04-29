@@ -5,7 +5,7 @@
   <b>EveloDB Prime</b>
   <br>
 </h1>
-<h3 align="center">A high-performance BSON-only database for Node.js. Made by Evelocore. With B-tree Operations.</h3>
+<h3 align="center">A high-performance native B-tree database for Node.js. Made by Evelocore.</h3>
 <br>
 <hr>
 
@@ -22,6 +22,7 @@
 - [🔢 Comparison Operators](#comparison-operators)
 - [🛠️ Configuration](#configuration)
 - [⚙️ Operations](#operations)
+- [💉 Inject Data](#inject)
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
 - [📦 Object Store](#objectstore)
@@ -256,6 +257,34 @@ db.delete('users', { username: 'john' })
   success: true,
   deletedCount: 1
 }
+```
+
+### Inject
+Perform high-performance bulk data injection. Useful for migrations or importing backups.
+```js
+const data = [
+  { 
+    username: 'alice', 
+    email: 'alice@example.com',
+    _createdAt: '2026-04-29T08:50:16Z',
+    _modifiedAt: '2026-04-29T10:00:00Z',
+    _id_: '69f1c6486266d6824c7680e4' 
+  },
+  // ... more records
+];
+
+// Method: 'overwrite' (default) - Clears collection before injection
+db.inject("users", data);
+
+// Method: 'merge' - Appends data to existing collection
+db.inject("users", data, { method: 'merge' });
+```
+> [!IMPORTANT]
+> **Data Integrity:** Injected data **must** include system fields: `_createdAt`, `_modifiedAt`, and the ID field (e.g., `userId` or `_id`). If a schema or `noRepeat` is defined, validation will be enforced during injection.
+
+> Output
+```bash
+{ success: true, count: 2 }
 ```
 
 ### Find
@@ -643,5 +672,8 @@ db.allFiles() // ['image.jpg', 'profile.pdf']
 <br><br>
 
 <p align="center">
-  Made with ❤️ by <b>Evelocore</b>
+Copyright 2025 © <a href="https://evelocore.com">Evelocore</a> - All rights reserved
+</p>
+<p align="center">
+Developed by <a href="https://kp.evelocore.com">K.Prabhasha</a>
 </p>

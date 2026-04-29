@@ -157,6 +157,7 @@ export class eveloDB {
   get<T = Record<string, unknown>>(collection: string): QueryResult<T>;
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult;
   update(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult;
+  inject(collection: string, data: Record<string, unknown>[], options?: { method?: 'overwrite' | 'merge' }): { success: boolean; count?: number; err?: string; code?: string };
   count(collection: string): CountResult;
   check(collection: string, data: Conditions): boolean;
   search<T = Record<string, unknown>>(collection: string, conditions: Record<string, unknown>): QueryResult<T>;

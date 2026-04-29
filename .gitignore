@@ -4,10 +4,8 @@
 /node_modules
 /evelodatabase
 /npm/node_modules
-/npm/dist
-/npm-ultra/node_modules
-/npm-ultra/dist
-/npm-prime/node_modules
+*/dist
+*/node_modules
 /evelodbprime_test
 /backups
 test_*

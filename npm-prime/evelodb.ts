@@ -1136,6 +1136,77 @@ export class eveloDB {
     return this.edit(collection, conditions, newData);
   }
 
+  inject(collection: string, data: Record<string, unknown>[], options: { method?: 'overwrite' | 'merge' } = {}): any {
+    if (!collection || !Array.isArray(data)) return { err: 'Invalid request' };
+    const method = options.method || 'overwrite';
+    const idKey = this.getObjectIdKey(collection);
+    const collSchema = this.config.schema?.[collection];
+    const isNoRepeat = collSchema?.noRepeat !== false;
+
+    // 1. Strict Collection Check
+    if (this.config.schema && Object.keys(this.config.schema).length > 0 && !this.config.schema[collection]) {
+      return { err: `Collection '${collection}' is not defined in schema`, code: 'COLLECTION_NOT_DEFINED' };
+    }
+
+    // 2. Validation & Pre-processing
+    const processedData: any[] = [];
+    for (const item of data) {
+      if (!item._id && !item[idKey]) return { err: `Record missing ID field (${idKey})`, code: 'MISSING_ID' };
+      if (!item._createdAt) return { err: "Record missing _createdAt", code: 'MISSING_CREATED_AT' };
+      if (!item._modifiedAt) return { err: "Record missing _modifiedAt", code: 'MISSING_MODIFIED_AT' };
+
+      const internal = this.mapInput(collection, item);
+      const schemaRes = this.validateSchema(collection, internal as Record<string, unknown>);
+      if (!schemaRes.valid) return { err: `Validation failed for record: ${schemaRes.err}`, code: 'SCHEMA_VALIDATION_FAILED' };
+
+      processedData.push(internal);
+    }
+
+    // 3. Handle Duplicate Checks (noRepeat)
+    if (isNoRepeat) {
+      const fingerprints = new Set<string>();
+      for (const doc of processedData) {
+        const fp = this.fingerprintOf(doc);
+        if (fingerprints.has(fp)) return { err: 'Duplicate data found in injection payload', code: 'DUPLICATE_DATA' };
+        fingerprints.add(fp);
+      }
+
+      if (method === 'merge') {
+        const existingFingerprints = this.buildFingerprintSet(this.allInternal(collection));
+        for (const doc of processedData) {
+          if (existingFingerprints.has(this.fingerprintOf(doc))) {
+            return { err: 'Injection contains records that already exist in the collection', code: 'DUPLICATE_DATA' };
+          }
+        }
+      }
+    }
+
+    // 4. Execute Injection
+    if (method === 'overwrite') {
+      this.drop(collection);
+    }
+
+    const h = this.getHandle(collection);
+    let successCount = 0;
+    for (const doc of processedData) {
+      const pk = String(doc._id);
+      if (method === 'merge' && h.primaryIndex.find(pk)) {
+        return { err: `Conflict: ID ${pk} already exists`, code: 'ID_CONFLICT' };
+      }
+      
+      const { offset, len } = h.store.append(doc);
+      h.primaryIndex.insert({ key: pk, offset, len });
+      
+      for (const [field, idx] of h.secondaryIndexes) {
+        if (doc[field] !== undefined) idx.insert({ key: String(doc[field]), offset, len });
+      }
+      successCount++;
+    }
+
+    this.flushHandle(collection);
+    return { success: true, count: successCount };
+  }
+
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
     if (!collection || !conditions || !newData) return { err: 'Invalid request' };
 
