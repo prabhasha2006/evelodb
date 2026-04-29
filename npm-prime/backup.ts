@@ -26,7 +26,8 @@ export interface BackupFileInfo {
 export class BackupManager {
   constructor(private db: any) {}
 
-  createBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; path: string; password?: string; title?: string }): BackupResult {
+  createBackup(collection: string, config: { type?: 'json' | 'binary'; path: string; password?: string; title?: string }): BackupResult {
+    const type = config.type || 'binary';
     if (!collection || !config.path) return { success: false, err: 'Invalid request' };
     try {
       if (!fs.existsSync(config.path)) fs.mkdirSync(config.path, { recursive: true });
@@ -36,19 +37,21 @@ export class BackupManager {
       const schema = this.db.config.schema?.[collection] || {};
       const serializedSchema = this.serializeSchema(schema);
 
-      if (config.type === 'json') {
+      if (type === 'json') {
         const recordsRes = this.db.allInternal(collection);
         if (!Array.isArray(recordsRes)) return { success: false, err: 'Failed to retrieve records' };
         
         const backupData = {
           collection,
           schema: { [collection]: serializedSchema },
+          length: recordsRes.length,
+          created: new Date(),
           data: recordsRes
         };
         const fullPath = path.join(config.path, `${filename}.json`);
         fs.writeFileSync(fullPath, JSON.stringify(backupData, null, 2));
         return { success: true, backupPath: fullPath };
-      } else if (config.type === 'binary') {
+      } else if (type === 'binary') {
         const recordsRes = this.db.allInternal(collection);
         if (!Array.isArray(recordsRes)) return { success: false, err: 'Failed to retrieve records' };
         const records = recordsRes;
@@ -72,18 +75,15 @@ export class BackupManager {
         fs.writeFileSync(fullPath, fileBuffer);
         return { success: true, backupPath: fullPath };
       } else {
-        const { dataPath } = this.db.getBsonPaths(collection);
-        if (!fs.existsSync(dataPath)) return { success: false, err: 'Collection file not found' };
-        const fullPath = path.join(config.path, `${filename}.db`);
-        fs.copyFileSync(dataPath, fullPath);
-        return { success: true, backupPath: fullPath };
+        return { success: false, err: 'Invalid backup type' };
       }
     } catch (e) {
       return { success: false, err: (e as Error).message };
     }
   }
 
-  restoreBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; file: string; password?: string }): { success: boolean; err?: string } {
+  restoreBackup(collection: string, config: { type?: 'json' | 'binary'; file: string; password?: string }): { success: boolean; err?: string } {
+    const type = config.type || 'binary';
     const filePath = config.file;
     if (!collection || !filePath || !fs.existsSync(filePath)) return { success: false, err: 'Invalid request or file not found' };
     
@@ -91,13 +91,13 @@ export class BackupManager {
       this.db.closeHandle(collection);
       const { dataPath } = this.db.getBsonPaths(collection);
 
-      if (config.type === 'json') {
+      if (type === 'json') {
         const backup = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         this.applyRestoredSchema(collection, backup.schema);
         this.db.drop(collection);
         for (const record of backup.data || []) this.db.create(collection, record);
         return { success: true };
-      } else if (config.type === 'binary') {
+      } else if (type === 'binary') {
         const backupInfo = this.readBackupFile(filePath, config.password);
         if (!backupInfo.success) return { success: false, err: backupInfo.err };
         
@@ -111,9 +111,7 @@ export class BackupManager {
         for (const record of backupInfo.data) this.db.create(collection, record);
         return { success: true };
       } else {
-        fs.copyFileSync(filePath, dataPath);
-        this.db.rebuildIndexes(collection);
-        return { success: true };
+        return { success: false, err: 'Invalid backup type' };
       }
     } catch (e) {
       return { success: false, err: (e as Error).message };

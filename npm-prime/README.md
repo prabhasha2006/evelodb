@@ -418,8 +418,6 @@ db.createBackup('users', {
 // 2. Backup as JSON
 db.createBackup('users', { type: 'json', path: './backups' });
 
-// 3. Backup as raw .db file
-db.createBackup('users', { type: 'db', path: './backups' });
 ```
 > Output (`createBackup`)
 ```bash
@@ -431,6 +429,7 @@ db.createBackup('users', { type: 'db', path: './backups' });
 
 # 🔍 Read Backup Info
 Inspect a backup file (Metadata & Data) without performing a restore.
+> **Note:** Backup type defaults to `'binary'` if not specified.
 
 ```js
 const info = db.readBackupFile('./backups/users_backup.backup', 'my_secret_password');
