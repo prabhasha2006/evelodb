@@ -110,6 +110,22 @@ export interface Condition {
 
 export type Conditions = Record<string, unknown | Condition>;
 
+export interface ObjectResult<T = any> {
+  success: boolean;
+  data?: T;
+  err?: string;
+  code?: string | number;
+}
+
+export class ObjectStore {
+  read<T = any>(): T | null;
+  write(data: Record<string, any>): ObjectResult;
+  update(data: Record<string, any>): ObjectResult;
+  delete(): ObjectResult;
+  rename(newName: string): ObjectResult;
+  list(): string[];
+}
+
 export interface BackupFileInfo {
   success: boolean;
   err?: string;
@@ -140,6 +156,7 @@ export class eveloDB {
   findOne<T = Record<string, unknown>>(collection: string, conditions: Conditions): T | null;
   get<T = Record<string, unknown>>(collection: string): QueryResult<T>;
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult;
+  update(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult;
   count(collection: string): CountResult;
   check(collection: string, data: Conditions): boolean;
   search<T = Record<string, unknown>>(collection: string, conditions: Record<string, unknown>): QueryResult<T>;
@@ -151,9 +168,11 @@ export class eveloDB {
   readFile(name: string): FileResult;
   readImage(name: string, config?: ReadImageConfig): Promise<ReadImageResult>;
   deleteFile(name: string): FileResult;
-  createBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; path: string; password?: string; title?: string }): BackupResult;
-  restoreBackup(collection: string, config: { type: 'json' | 'db' | 'binary'; file: string; password?: string }): { success: boolean; err?: string };
+  createBackup(collection: string, config: { type?: 'json' | 'binary'; path: string; password?: string; title?: string }): BackupResult;
+  restoreBackup(collection: string, config: { type?: 'json' | 'binary'; file: string; password?: string }): { success: boolean; err?: string };
   readBackupFile(filePath: string, password?: string): BackupFileInfo;
+  rebuildIndexes(collection: string): void;
+  object(name?: string): ObjectStore;
   closeAll(): void;
 }
 

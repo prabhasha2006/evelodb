@@ -1132,6 +1132,9 @@ export class eveloDB {
     }
     return new QueryResult<T>(results);
   }
+  update(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
+    return this.edit(collection, conditions, newData);
+  }
 
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
     if (!collection || !conditions || !newData) return { err: 'Invalid request' };

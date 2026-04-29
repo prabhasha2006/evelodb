@@ -229,6 +229,7 @@ db.create('users', {
 
 ### Update
 Modifies existing records that match the conditions.
+> **Note:** `db.update()` is an alias for `db.edit()`.
 ```js
 db.edit('users', 
     { username: 'john' },
