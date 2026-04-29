@@ -20,7 +20,9 @@
 - [📥 Installation](#installation)
 - [📘 TypeScript / ES Modules](#typescript)
 - [🔢 Comparison Operators](#comparison-operators)
+- [⚙️ Configuration](#configuration)
 - [⚙️ Operations](#operations)
+
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
 - [📁 Store Files](#filehandle)
@@ -52,17 +54,18 @@ import eveloDB from 'evelodb-prime';
 const db = new eveloDB();
 ```
 
+<a id="configuration"></a>
 ### Configuration
 ```js
 const db = new eveloDB({
     directory: './evelodbprime', // Storage directory
-    noRepeat: false,              // Reject duplicate data
+    noRepeat: false,             // Reject duplicate data
     schema: {
         users: {
             fields: {
                 username: { type: String, required: true, min: 5, max: 30 },
                 email: { type: String, required: true },
-                age: { type: Number, required: true, min: 18, max: 90 },
+                age: { type: Number, required: true, max: 90 },
                 vehicle: {
                     type: {
                         color: { type: String, required: true },
@@ -71,8 +74,19 @@ const db = new eveloDB({
                     required: false
                 }
             },
-            indexes: ["email", "username"],
-            uniqueKeys: ["email", "username"]
+            indexes: ["email", "username"], // These indexes will be created as B-Trees on the disk for faster searching
+            uniqueKeys: ["email", "username"], // These fields will be checked for uniqueness before insertion
+            objectIdKey: "userId" // This field will be the auto generated id
+        },
+        products: {
+            fields: {
+                name: { type: String, required: true },
+                price: { type: Number, required: true, min: 0 },
+                inStock: { type: Boolean, required: true }
+            },
+            indexes: ["name"], // If not specified, it will default to [objectIdKey] or ["_id"]
+            uniqueKeys: ["name"], // If not specified, it will default to []
+            objectIdKey: "productId" // If not specified, it will default to '_id'
         }
     }
 });
@@ -88,7 +102,31 @@ const db = new eveloDB({
 | `compactThreshold` | number   | No       | Auto-compact ratio (0.1 - 0.9)               | `0.3`                       |
 | `schema`           | Object   | No       | Schema, Indexes, and Unique Keys for collections | `{}`                    |
 
+### Schema Definition
+
+When defining a `schema`, each collection can have `fields`, `indexes`, and `uniqueKeys`.
+
+#### Field Validation
+| Property   | Type               | Description                                                                 | Required |
+|------------|--------------------|-----------------------------------------------------------------------------|----------|
+| `type`     | Constructor / Obj  | Data type (e.g., `String`, `Number`, `Boolean`, or a nested object schema). | **Yes**  |
+| `required` | boolean            | If `true`, the field must be present during creation/update.                | No       |
+| `min`      | number             | Minimum value for `Number` or minimum length for `String`.                  | No       |
+| `max`      | number             | Maximum value for `Number` or maximum length for `String`.                  | No       |
+
+#### Collection Options
+| Option       | Type     | Description                                                                 | Required |
+|--------------|----------|-----------------------------------------------------------------------------|----------|
+| `fields`     | Object   | Field validation rules (as defined in the table above).                     | No       |
+| `indexes`    | string[] | Fields to create B-Tree indexes for (enables O(log n) searches).            | No       |
+| `uniqueKeys` | string[] | Fields that must contain unique values across the entire collection.        | No       |
+| `objectIdKey`| string   | Virtual name for the internal `_id` field (e.g., `"userId"`).               | No       |
+
+> [!IMPORTANT]
+> **System Managed Fields:** Fields like `_id` (or your custom `objectIdKey`), `_createdAt`, and `_modifiedAt` are automatically managed by EveloDB. Any attempt to manually set or update these fields in `create()` or `edit()` will result in an error.
+
 > **Note:** All parameters are optional. If no directory is specified, EveloDB will default to `./evelodbprime`.
+
 
 > **Note:** EveloDB Prime uses `.db` extension and `_id` as the primary key. Secondary indexes use `.field.bidx` files.
 
@@ -146,11 +184,12 @@ db.create('users', {
 ```bash
 { 
   success: true, 
-  _id: '662e5a4e3d5a4e3d5a4e3d5a',
+  userId: '662e5a4e3d5a4e3d5a4e3d5a', // Renamed via objectIdKey
   _createdAt: '2026-04-28T10:00:00Z',
   _modifiedAt: '2026-04-28T10:00:00Z'
 }
 ```
+> **Note:** If `objectIdKey` is not defined in the schema, this field defaults to `_id`.
 
 ### Update
 Modifies existing records that match the conditions.
@@ -185,8 +224,8 @@ db.delete('users', { username: 'john' })
 ### Find
 Search for records. Returns a `QueryResult` object.
 ```js
-// Find one (returns object or null)
-const user = db.findOne('users', { email: 'john@example.com' });
+// Find one using virtual ID key
+const user = db.findOne('users', { userId: '662e5a4e3d5a4e3d5a4e3d5a' });
 
 // Find many (returns QueryResult)
 const result = db.find('users', { age: { $gt: 18 } });
@@ -212,6 +251,9 @@ result.sort((a, b) => a.age - b.age); // Returns sorted QueryResult
 <a id="backup"></a>
 # 💾 Backup Data
 Export your collection data for safekeeping or migration.
+
+> [!NOTE]
+> Backups always preserve the original `_id` field, even if you have configured an `objectIdKey`. This ensures your backups remain compatible even if you change your schema configuration later.
 
 ```js
 // 1. Backup as Secure Binary (Full-file XOR Encoding)
@@ -335,6 +377,7 @@ const img = await db.readImage('avatar.jpg', {
 - **Feature**: Added `readBackupFile` for safe inspection of encrypted backups.
 - **Feature**: Switched to **24-character Hex ObjectIDs** for better indexing compatibility.
 - **Feature**: Added **Secondary B-Tree Indexes** and **Unique Key** support.
+- **Feature**: Added **objectIdKey** to schema for virtual renaming of the `_id` field in API calls.
 - **Performance**: Optimized B-Tree insertion and search speeds.
 
 <br><br>

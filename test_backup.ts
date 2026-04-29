@@ -14,7 +14,8 @@ const config: EveloDBConfig = {
                 married: { type: Boolean, required: true },
             },
             indexes: ["email"],
-            uniqueKeys: ["email"]
+            uniqueKeys: ["email"],
+            objectIdKey: "user"
         }
     }
 }
@@ -82,7 +83,7 @@ function restore() {
 
     const c1 = db.create("users", { username: "alice", email: "alice@example.com", age: 25, married: false, user: "eee" });
     const c = db.get("users").all()
-    console.log(c)
+    console.log(c1)
     return
     db.create("users", { username: "bob", email: "bob@example.com", age: 30 });
     const a = db.createBackup("users", {

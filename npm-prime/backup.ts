@@ -37,8 +37,8 @@ export class BackupManager {
       const serializedSchema = this.serializeSchema(schema);
 
       if (config.type === 'json') {
-        const recordsRes = this.db.get(collection).all();
-        if (!Array.isArray(recordsRes)) return { success: false, err: recordsRes.err };
+        const recordsRes = this.db.allInternal(collection);
+        if (!Array.isArray(recordsRes)) return { success: false, err: 'Failed to retrieve records' };
         
         const backupData = {
           collection,
@@ -49,8 +49,8 @@ export class BackupManager {
         fs.writeFileSync(fullPath, JSON.stringify(backupData, null, 2));
         return { success: true, backupPath: fullPath };
       } else if (config.type === 'binary') {
-        const recordsRes = this.db.get(collection).all();
-        if (!Array.isArray(recordsRes)) return { success: false, err: recordsRes.err };
+        const recordsRes = this.db.allInternal(collection);
+        if (!Array.isArray(recordsRes)) return { success: false, err: 'Failed to retrieve records' };
         const records = recordsRes;
 
         const backupData = {

@@ -6,6 +6,13 @@ import { BackupManager } from './backup.js';
 
 // ─── Type Definitions ──────────────────────────────────────────────────────────
 
+export interface CollectionSchema {
+  fields?: Record<string, any>;
+  indexes?: string[];
+  uniqueKeys?: string[];
+  objectIdKey?: string;
+}
+
 export interface EveloDBConfig {
   directory?: string;
   noRepeat?: boolean;
@@ -13,7 +20,7 @@ export interface EveloDBConfig {
   maxHandles?: number;
   /** Compact BSON collection when tombstone ratio exceeds this (0–1). Default 0.3 */
   compactThreshold?: number;
-  schema?: Record<string, Record<string, any>>;
+  schema?: Record<string, CollectionSchema>;
 }
 
 export interface ReadImageConfig {
@@ -36,6 +43,7 @@ export interface WriteResult {
   err?: string;
   code?: string | number;
   _id?: string | ObjectId;
+  [key: string]: any;
 }
 
 
@@ -742,6 +750,32 @@ export class eveloDB {
     return new ObjectId().toHexString();
   }
 
+  private getObjectIdKey(collection: string): string {
+    return this.config.schema?.[collection]?.objectIdKey || '_id';
+  }
+
+  private mapInput(collection: string, data: Record<string, any>): Record<string, any> {
+    const key = this.getObjectIdKey(collection);
+    if (key === '_id' || !data) return data;
+    const mapped = { ...data };
+    if (key in mapped) {
+      mapped._id = mapped[key];
+      delete mapped[key];
+    }
+    return mapped;
+  }
+
+  private mapOutput<T>(collection: string, data: T): T {
+    const key = this.getObjectIdKey(collection);
+    if (key === '_id' || !data || typeof data !== 'object') return data;
+    const mapped = { ...(data as any) };
+    if ('_id' in mapped) {
+      mapped[key] = mapped._id;
+      delete mapped._id;
+    }
+    return mapped;
+  }
+
 
   private matchesConditions(item: Record<string, unknown>, conditions: Conditions): boolean {
     return Object.entries(conditions).every(([key, value]) => {
@@ -848,10 +882,19 @@ export class eveloDB {
 
   create(collection: string, data: Record<string, unknown>): WriteResult {
     if (!collection || !data || typeof data !== 'object') return { err: 'Invalid request' };
-    const schemaRes = this.validateSchema(collection, data as Record<string, unknown>);
+    
+    const idKey = this.getObjectIdKey(collection);
+    const forbidden = ['_id', '_createdAt', '_modifiedAt'];
+    if (idKey !== '_id') forbidden.push(idKey);
+    for (const key of forbidden) {
+      if (key in data) return { err: `Field '${key}' is auto-generated and cannot be set manually`, code: 'FORBIDDEN_FIELD' };
+    }
+
+    const mappedData = this.mapInput(collection, data);
+    const schemaRes = this.validateSchema(collection, mappedData as Record<string, unknown>);
     if (!schemaRes.valid) return { err: schemaRes.err, code: 'SCHEMA_VALIDATION_FAILED' };
     const h = this.getHandle(collection);
-    const doc = { ...data };
+    const doc = { ...mappedData };
     const now = new Date().toISOString();
     if (!doc._id) doc._id = this.generateUniqueId();
     if (!doc._createdAt) doc._createdAt = now;
@@ -889,14 +932,17 @@ export class eveloDB {
     }
 
     this.flushHandle(collection);
-    return { success: true, _id: doc._id as string };
+    const result: WriteResult = { success: true };
+    (result as any)[idKey] = doc._id;
+    return result;
   }
 
   delete(collection: string, conditions: Conditions): DeleteResult {
     if (!collection || !conditions) return { err: 'Invalid request' };
+    const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
     const h = this.getHandle(collection);
     let deletedCount = 0;
-    const toDelete = this.find(collection, conditions).all() as Record<string, unknown>[];
+    const toDelete = this.find(collection, mappedConditions, true).all() as Record<string, unknown>[];
 
     for (const doc of toDelete) {
       const pk = String(doc._id);
@@ -916,10 +962,11 @@ export class eveloDB {
     return { success: true, deletedCount };
   }
 
-  find<T = Record<string, unknown>>(collection: string, conditions: Conditions): QueryResult<T> {
+  find<T = Record<string, unknown>>(collection: string, conditions: Conditions, raw: boolean = false): QueryResult<T> {
     if (!collection || !conditions) return new QueryResult<T>(null, 'Invalid request');
+    const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
     const h = this.getHandle(collection);
-    const condEntries = Object.entries(conditions);
+    const condEntries = Object.entries(mappedConditions);
 
     // Try to use indexes
     if (condEntries.length > 0) {
@@ -930,8 +977,8 @@ export class eveloDB {
           const entry = h.primaryIndex.find(String(val));
           if (entry) {
             const doc = h.store.read(entry.offset, entry.len);
-            if (doc && this.matchesConditions(doc as Record<string, unknown>, conditions)) {
-              return new QueryResult<T>([doc as unknown as T]);
+            if (doc && this.matchesConditions(doc as Record<string, unknown>, mappedConditions)) {
+              return new QueryResult<T>([(raw ? doc : this.mapOutput(collection, doc)) as unknown as T]);
             }
           }
           return new QueryResult<T>([]);
@@ -942,8 +989,8 @@ export class eveloDB {
           const entry = sIdx.find(String(val));
           if (entry) {
             const doc = h.store.read(entry.offset, entry.len);
-            if (doc && this.matchesConditions(doc as Record<string, unknown>, conditions)) {
-              return new QueryResult<T>([doc as unknown as T]);
+            if (doc && this.matchesConditions(doc as Record<string, unknown>, mappedConditions)) {
+              return new QueryResult<T>([(raw ? doc : this.mapOutput(collection, doc)) as unknown as T]);
             }
           }
           // Note: Secondary indexes might have duplicates. 
@@ -956,7 +1003,9 @@ export class eveloDB {
     const results: T[] = [];
     for (const e of h.primaryIndex.allEntries()) {
       const doc = h.store.read(e.offset, e.len);
-      if (doc && this.matchesConditions(doc as Record<string, unknown>, conditions)) results.push(doc as unknown as T);
+      if (doc && this.matchesConditions(doc as Record<string, unknown>, mappedConditions)) {
+        results.push((raw ? doc : this.mapOutput(collection, doc)) as unknown as T);
+      }
     }
     return new QueryResult<T>(results);
   }
@@ -971,21 +1020,31 @@ export class eveloDB {
     const h = this.getHandle(collection), results: T[] = [];
     for (const e of h.primaryIndex.allEntries()) {
       const doc = h.store.read(e.offset, e.len);
-      if (doc) results.push(doc as unknown as T);
+      if (doc) results.push(this.mapOutput(collection, doc) as unknown as T);
     }
     return new QueryResult<T>(results);
   }
 
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
     if (!collection || !conditions || !newData) return { err: 'Invalid request' };
+    
+    const idKey = this.getObjectIdKey(collection);
+    const forbidden = ['_id', '_createdAt', '_modifiedAt'];
+    if (idKey !== '_id') forbidden.push(idKey);
+    for (const key of forbidden) {
+      if (key in newData) return { err: `Field '${key}' is auto-generated and cannot be set manually`, code: 'FORBIDDEN_FIELD' };
+    }
+
+    const mappedConditions = this.mapInput(collection, conditions as Record<string, any>);
+    const mappedNewData = this.mapInput(collection, newData);
     const h = this.getHandle(collection);
     let modifiedCount = 0, skippedDuplicates = 0;
-    const toUpdate = this.find(collection, conditions).all() as Record<string, unknown>[];
+    const toUpdate = this.find(collection, mappedConditions, true).all() as Record<string, unknown>[];
     if (toUpdate.length === 0) return { err: 'No match', code: 'NO_MATCH' };
 
     if (this.config.schema?.[collection]) {
       for (const doc of toUpdate) {
-        const schemaRes = this.validateSchema(collection, { ...doc, ...newData });
+        const schemaRes = this.validateSchema(collection, { ...doc, ...mappedNewData });
         if (!schemaRes.valid) return { err: schemaRes.err, code: 'SCHEMA_VALIDATION_FAILED' };
       }
     }
@@ -1000,7 +1059,7 @@ export class eveloDB {
       if (!entry) continue;
 
       const now = new Date().toISOString();
-      const updated = { ...doc, ...newData, _id: doc._id, _modifiedAt: now };
+      const updated = { ...doc, ...mappedNewData, _id: doc._id, _modifiedAt: now };
 
       if (this.config.noRepeat && this.isDuplicateInArray([...baseSnapshot, ...written], updated)) {
         skippedDuplicates++; continue;
@@ -1027,7 +1086,8 @@ export class eveloDB {
     return { success: true, modifiedCount, skippedDuplicates };
   }
 
-  private allInternal(collection: string): Record<string, unknown>[] {
+  /** Returns all records with original _id (unmapped) */
+  allInternal(collection: string): Record<string, unknown>[] {
     const h = this.getHandle(collection), results: Record<string, unknown>[] = [];
     for (const e of h.primaryIndex.allEntries()) {
       const doc = h.store.read(e.offset, e.len);
@@ -1046,15 +1106,16 @@ export class eveloDB {
     return Array.isArray(res) && res.length > 0;
   }
 
-  search<T = Record<string, unknown>>(collection: string, conditions: Record<string, unknown>): QueryResult<T> {
+  search<T = Record<string, unknown>>(collection: string, conditions: Record<string, unknown>, raw: boolean = false): QueryResult<T> {
     if (!collection || !conditions) return new QueryResult<T>(null, 'Invalid request');
-    const pkVal = conditions._id;
+    const mappedConditions = this.mapInput(collection, conditions);
+    const pkVal = mappedConditions._id;
     if (pkVal !== undefined && typeof pkVal === 'string') {
       const h = this.getHandle(collection), entry = h.primaryIndex.find(pkVal);
       if (!entry) return new QueryResult<T>([]);
       const doc = h.store.read(entry.offset, entry.len);
       if (!doc) return new QueryResult<T>([]);
-      const others = Object.fromEntries(Object.entries(conditions).filter(([k]) => k !== '_id'));
+      const others = Object.fromEntries(Object.entries(mappedConditions).filter(([k]) => k !== '_id'));
       const matches = Object.entries(others).every(([k, v]) => {
         const f = doc[k]; if (f == null) return false;
         if (v && typeof v === 'object' && (v as Condition).$regex) {
@@ -1062,17 +1123,17 @@ export class eveloDB {
         }
         return String(f).toLowerCase().includes(String(v).toLowerCase());
       });
-      return new QueryResult<T>(matches ? [doc as unknown as T] : []);
+      return new QueryResult<T>(matches ? [(raw ? doc : this.mapOutput(collection, doc)) as unknown as T] : []);
     }
     const all = this.allInternal(collection);
-    const results = all.filter(item => Object.entries(conditions).every(([k, v]) => {
+    const results = all.filter(item => Object.entries(mappedConditions).every(([k, v]) => {
       const f = item[k]; if (f == null) return false;
       if (v && typeof v === 'object' && (v as Condition).$regex) {
         return new RegExp((v as Condition).$regex!, (v as Condition).$options || 'i').test(String(f));
       }
       return String(f).toLowerCase().includes(String(v).toLowerCase());
-    }));
-    return new QueryResult<T>(results as unknown as T[]);
+    })).map(doc => (raw ? doc : this.mapOutput(collection, doc)) as unknown as T);
+    return new QueryResult<T>(results);
   }
 
   drop(collection: string): DropResult {
