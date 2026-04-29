@@ -42,7 +42,7 @@ export class BackupManager {
         
         const backupData = {
           collection,
-          schema: serializedSchema,
+          schema: { [collection]: serializedSchema },
           data: recordsRes
         };
         const fullPath = path.join(config.path, `${filename}.json`);
@@ -55,8 +55,9 @@ export class BackupManager {
 
         const backupData = {
           title: config.title || '',
+          collection,
           protected: !!config.password,
-          schema: serializedSchema,
+          schema: { [collection]: serializedSchema },
           length: records.length,
           created: new Date(),
           data: records
@@ -208,6 +209,9 @@ export class BackupManager {
 
   private applyRestoredSchema(collection: string, schema: any) {
     if (schema) {
+      // Handle both old (direct) and new (wrapped) schema formats
+      const targetSchema = schema[collection] || schema;
+      
       const deserializeFields = (fields: any) => {
         if (!fields) return undefined;
         const result: any = {};
@@ -225,11 +229,11 @@ export class BackupManager {
       };
       if (!this.db.config.schema) this.db.config.schema = {};
       this.db.config.schema[collection] = {
-        fields: deserializeFields(schema.fields),
-        indexes: schema.indexes,
-        uniqueKeys: schema.uniqueKeys,
-        objectIdKey: schema.objectIdKey,
-        noRepeat: schema.noRepeat
+        fields: deserializeFields(targetSchema.fields),
+        indexes: targetSchema.indexes,
+        uniqueKeys: targetSchema.uniqueKeys,
+        objectIdKey: targetSchema.objectIdKey,
+        noRepeat: targetSchema.noRepeat
       };
     }
   }
