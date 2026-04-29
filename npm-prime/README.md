@@ -96,7 +96,6 @@ const db = new eveloDB({
 | Parameter          | Type     | Required | Description                                  | Default                     |
 |--------------------|----------|----------|----------------------------------------------|-----------------------------|
 | `directory`        | string   | No       | Where database files are stored              | `'./evelodbprime'`          |
-| `noRepeat`         | boolean  | No       | Reject duplicate data (all fields)           | `false`                     |
 | `maxHandles`       | number   | No       | Max open collection handles (LRU)             | `64`                        |
 | `compactThreshold` | number   | No       | Auto-compact ratio (0.1 - 0.9)               | `0.3`                       |
 | `schema`           | Object   | No       | Schema, Indexes, and Unique Keys for collections | `{}`                    |
@@ -120,6 +119,7 @@ When defining a `schema`, each collection can have `fields`, `indexes`, and `uni
 | `indexes`    | string[] | Fields to create B-Tree indexes for (enables O(log n) searches).            | No       |
 | `uniqueKeys` | string[] | Fields that must contain unique values across the entire collection.        | No       |
 | `objectIdKey`| string   | Virtual name for the internal `_id` field (e.g., `"userId"`).               | No       |
+| `noRepeat`   | boolean  | If `true` (default), rejects insertions of exact duplicate records.        | No       |
 
 > [!IMPORTANT]
 > **System Managed Fields:** Fields like `_id` (or your custom `objectIdKey`), `_createdAt`, and `_modifiedAt` are automatically managed by EveloDB. Any attempt to manually set or update these fields in `create()` or `edit()` will result in an error.

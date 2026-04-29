@@ -11,14 +11,12 @@ export interface CollectionSchema {
   indexes?: string[];
   uniqueKeys?: string[];
   objectIdKey?: string;
+  noRepeat?: boolean;
 }
 
 export interface EveloDBConfig {
   directory?: string;
-  noRepeat?: boolean;
-  /** Max open collection handles before LRU eviction. Default 64 */
   maxHandles?: number;
-  /** Compact BSON collection when tombstone ratio exceeds this (0–1). Default 0.3 */
   compactThreshold?: number;
   schema?: Record<string, CollectionSchema>;
 }
@@ -130,7 +128,6 @@ export type Conditions = Record<string, unknown | Condition>;
 
 const defaultConfig: Required<EveloDBConfig> = {
   directory: './evelodbprime',
-  noRepeat: false,
   maxHandles: 64,
   compactThreshold: 0.3,
   schema: {},
@@ -942,7 +939,8 @@ export class eveloDB {
       }
     }
 
-    if (this.config.noRepeat) {
+    const noRepeat = collSchema?.noRepeat !== false;
+    if (noRepeat) {
       const fingerprints = this.buildFingerprintSet(this.allInternal(collection));
       if (fingerprints.has(this.fingerprintOf(doc))) return { err: 'Duplicate data', code: 'DUPLICATE_DATA' };
     }
@@ -1094,7 +1092,8 @@ export class eveloDB {
     }
 
     const updatingKeys = new Set(toUpdate.map(d => String(d._id)));
-    const baseSnapshot = this.config.noRepeat
+    const isNoRepeat = this.config.schema?.[collection]?.noRepeat !== false;
+    const baseSnapshot = isNoRepeat
       ? this.allInternal(collection).filter(d => !updatingKeys.has(String(d._id))) : [];
     const written: Record<string, unknown>[] = [];
 
@@ -1105,7 +1104,7 @@ export class eveloDB {
       const now = new Date().toISOString();
       const updated = { ...doc, ...mappedNewData, _id: doc._id, _modifiedAt: now };
 
-      if (this.config.noRepeat && this.isDuplicateInArray([...baseSnapshot, ...written], updated)) {
+      if (isNoRepeat && this.isDuplicateInArray([...baseSnapshot, ...written], updated)) {
         skippedDuplicates++; continue;
       }
 

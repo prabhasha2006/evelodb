@@ -181,8 +181,9 @@ export class BackupManager {
   }
 
   private serializeSchema(schema: any) {
-    if (!schema || !schema.fields) return {};
-    const serialize = (fields: any) => {
+    if (!schema) return {};
+    const serializeFields = (fields: any) => {
+      if (!fields) return undefined;
       const result: any = {};
       for (const [k, v] of Object.entries(fields)) {
         const cfg = { ...(v as any) };
@@ -191,21 +192,24 @@ export class BackupManager {
         else if (cfg.type === Boolean) cfg.type = 'Boolean';
         else if (cfg.type === Array) cfg.type = 'Array';
         else if (cfg.type === Object) cfg.type = 'Object';
-        else if (typeof cfg.type === 'object' && cfg.type !== null) cfg.type = serialize(cfg.type);
+        else if (typeof cfg.type === 'object' && cfg.type !== null) cfg.type = serializeFields(cfg.type);
         result[k] = cfg;
       }
       return result;
     };
     return {
-      fields: serialize(schema.fields),
+      fields: serializeFields(schema.fields),
       indexes: schema.indexes,
-      uniqueKeys: schema.uniqueKeys
+      uniqueKeys: schema.uniqueKeys,
+      objectIdKey: schema.objectIdKey,
+      noRepeat: schema.noRepeat
     };
   }
 
   private applyRestoredSchema(collection: string, schema: any) {
-    if (schema && schema.fields) {
-      const deserialize = (fields: any) => {
+    if (schema) {
+      const deserializeFields = (fields: any) => {
+        if (!fields) return undefined;
         const result: any = {};
         for (const [k, v] of Object.entries(fields)) {
           const cfg = { ...(v as any) };
@@ -214,15 +218,18 @@ export class BackupManager {
           else if (cfg.type === 'Boolean') cfg.type = Boolean;
           else if (cfg.type === 'Array') cfg.type = Array;
           else if (cfg.type === 'Object') cfg.type = Object;
-          else if (typeof cfg.type === 'object' && cfg.type !== null) cfg.type = deserialize(cfg.type);
+          else if (typeof cfg.type === 'object' && cfg.type !== null) cfg.type = deserializeFields(cfg.type);
           result[k] = cfg;
         }
         return result;
       };
+      if (!this.db.config.schema) this.db.config.schema = {};
       this.db.config.schema[collection] = {
-        fields: deserialize(schema.fields),
+        fields: deserializeFields(schema.fields),
         indexes: schema.indexes,
-        uniqueKeys: schema.uniqueKeys
+        uniqueKeys: schema.uniqueKeys,
+        objectIdKey: schema.objectIdKey,
+        noRepeat: schema.noRepeat
       };
     }
   }
