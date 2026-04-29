@@ -109,6 +109,13 @@ export interface ReadImageResult {
   };
 }
 
+export interface ObjectResult<T = any> {
+  success: boolean;
+  data?: T;
+  err?: string;
+  code?: string | number;
+}
+
 export interface Condition {
   $eq?: unknown;
   $ne?: unknown;
@@ -123,6 +130,73 @@ export interface Condition {
 }
 
 export type Conditions = Record<string, unknown | Condition>;
+
+// ─── Object Store Handler ───────────────────────────────────────────────────
+
+class ObjectStore {
+  private baseDir: string;
+
+  constructor(private dbDir: string, private name?: string) {
+    this.baseDir = `${this.dbDir}/objects`;
+    if (!fs.existsSync(this.baseDir)) fs.mkdirSync(this.baseDir, { recursive: true });
+  }
+
+  private getPath(name: string): string {
+    return `${this.baseDir}/${name}.objdb`;
+  }
+
+  read<T = any>(): T | null {
+    if (!this.name) return null;
+    const p = this.getPath(this.name);
+    if (!fs.existsSync(p)) return null;
+    try {
+      return BSON.deserialize(fs.readFileSync(p)) as T;
+    } catch { return null; }
+  }
+
+  write(data: Record<string, any>): ObjectResult {
+    if (!this.name) return { success: false, err: 'Object name required' };
+    try {
+      fs.writeFileSync(this.getPath(this.name), BSON.serialize(data));
+      return { success: true };
+    } catch (e) { return { success: false, err: (e as Error).message }; }
+  }
+
+  update(data: Record<string, any>): ObjectResult {
+    if (!this.name) return { success: false, err: 'Object name required' };
+    const current = this.read() || {};
+    return this.write({ ...current, ...data });
+  }
+
+  delete(): ObjectResult {
+    if (!this.name) return { success: false, err: 'Object name required' };
+    const p = this.getPath(this.name);
+    if (!fs.existsSync(p)) return { success: false, err: 'Not found' };
+    try {
+      fs.unlinkSync(p);
+      return { success: true };
+    } catch (e) { return { success: false, err: (e as Error).message }; }
+  }
+
+  rename(newName: string): ObjectResult {
+    if (!this.name || !newName) return { success: false, err: 'Names required' };
+    const oldP = this.getPath(this.name);
+    const newP = this.getPath(newName);
+    if (!fs.existsSync(oldP)) return { success: false, err: 'Not found' };
+    try {
+      fs.renameSync(oldP, newP);
+      this.name = newName;
+      return { success: true };
+    } catch (e) { return { success: false, err: (e as Error).message }; }
+  }
+
+  list(): string[] {
+    if (!fs.existsSync(this.baseDir)) return [];
+    return fs.readdirSync(this.baseDir)
+      .filter(f => f.endsWith('.objdb'))
+      .map(f => f.replace('.objdb', ''));
+  }
+}
 
 // ─── Default Config ────────────────────────────────────────────────────────────
 
@@ -1305,6 +1379,10 @@ export class eveloDB {
       }
     }
     this.flushHandle(collection);
+  }
+
+  object(name?: string): ObjectStore {
+    return new ObjectStore(this.config.directory, name);
   }
 }
 

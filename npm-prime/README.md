@@ -24,6 +24,7 @@
 - [⚙️ Operations](#operations)
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
+- [📦 Object Store](#objectstore)
 - [📁 Store Files](#filehandle)
 - [🖼️ Image Utilities](#filehandleimg)
 - [💡 Features](#features)
@@ -465,6 +466,35 @@ db.restoreBackup('users', {
 { success: true }
 ```
 
+
+<br><br>
+
+<a id="objectstore"></a>
+# 📦 Object Store
+
+> ### Store simple application configuration or small state objects as standalone BSON files (.objdb). Perfect for keeping app data that doesn't require complex collections or indexing.
+
+### Write/Update Object
+```js
+db.object("appConfig").write({ theme: 'dark', version: '1.0.4' })
+db.object("appConfig").update({ theme: 'light' }) // Merges with existing data
+```
+
+### Read Object
+```js
+const config = db.object("appConfig").read() // { theme: 'light', version: '1.0.4' } or null
+```
+
+### Rename/Delete
+```js
+db.object("appConfig").rename("userSettings")
+db.object("userSettings").delete()
+```
+
+### List all objects
+```js
+const objects = db.object().list() // ["userSettings", "themeCache"] or []
+```
 
 <br><br>
 
