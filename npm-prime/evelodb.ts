@@ -4,6 +4,25 @@ import { BSON, ObjectId } from 'bson';
 import imageProcess from './imageProcess.js';
 import { BackupManager } from './backup.js';
 
+// ─── Windows Safe Rename ───────────────────────────────────────────────────────
+
+function safeRename(oldPath: string, newPath: string) {
+  if (oldPath === newPath) return;
+  try {
+    if (fs.existsSync(newPath)) {
+      try { fs.unlinkSync(newPath); } catch (e) { /* ignore */ }
+    }
+    fs.renameSync(oldPath, newPath);
+  } catch (err) {
+    if (process.platform === 'win32') {
+      try {
+        fs.copyFileSync(oldPath, newPath);
+        fs.unlinkSync(oldPath);
+      } catch (e) { throw err; }
+    } else { throw err; }
+  }
+}
+
 // ─── Type Definitions ──────────────────────────────────────────────────────────
 
 export interface CollectionSchema {
@@ -184,7 +203,7 @@ class ObjectStore {
     const newP = this.getPath(newName);
     if (!fs.existsSync(oldP)) return { success: false, err: 'Not found' };
     try {
-      fs.renameSync(oldP, newP);
+      safeRename(oldP, newP);
       this.name = newName;
       return { success: true };
     } catch (e) { return { success: false, err: (e as Error).message }; }
@@ -342,7 +361,7 @@ class PersistedBTree {
       return this.deserializeNode(buf, pos);
     } catch (err) {
       const corrupt = this.idxPath + '.corrupt.' + Date.now();
-      try { fs.renameSync(this.idxPath, corrupt); } catch { /* ignore */ }
+      try { safeRename(this.idxPath, corrupt); } catch { /* ignore */ }
       console.error(
         `[eveloDB] WARNING: corrupt index "${this.idxPath}" renamed to "${corrupt}". ` +
         `Index will be rebuilt from scratch. Error: ${(err as Error).message}`
@@ -361,7 +380,7 @@ class PersistedBTree {
     this.serializeNode(this.root, arr);
     const tmp = this.idxPath + '.tmp';
     fs.writeFileSync(tmp, Buffer.from(arr));
-    fs.renameSync(tmp, this.idxPath);
+    safeRename(tmp, this.idxPath);
     this.dirty = false;
   }
 
@@ -652,7 +671,7 @@ class BSONPageStore {
     fs.closeSync(tmpFd);
     this.close();
     try { fs.writeFileSync(this.walPath, Buffer.alloc(0)); } catch { /* ignore */ }
-    fs.renameSync(tmpPath, this.dataPath);
+    safeRename(tmpPath, this.dataPath);
     this.open();
     this.tombstoneCount = 0;
     this.liveCount = liveEntries.length;
@@ -1373,7 +1392,7 @@ export class eveloDB {
     const dir = `${this.config.directory}/files`;
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     try {
-      const tmp = `${dir}/${name}.tmp`; fs.writeFileSync(tmp, data); fs.renameSync(tmp, `${dir}/${name}`);
+      const tmp = `${dir}/${name}.tmp`; fs.writeFileSync(tmp, data); safeRename(tmp, `${dir}/${name}`);
       return { success: true };
     } catch (e) { return { err: (e as Error).message }; }
   }
