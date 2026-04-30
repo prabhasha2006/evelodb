@@ -1350,16 +1350,18 @@ export class eveloDB {
     this.flushHandle(collection);
     const h = this.handles.get(collection);
     if (h) { h.store.close(); this.handles.delete(collection); }
-    const schema = this.config.schema?.[collection];
-    const toDelete = [path.join(this.config.directory, `${collection}.db`), path.join(this.config.directory, `${collection}.bidx`)];
-    if (schema?.indexes) {
-      for (const field of schema.indexes) {
-        if (field === '_id') continue;
-        toDelete.push(path.join(this.config.directory, `${collection}.${field}.bidx`));
+    
+    let deleted = 0;
+    if (fs.existsSync(this.config.directory)) {
+      const files = fs.readdirSync(this.config.directory);
+      const prefix = `${collection}.`;
+      for (const file of files) {
+        if (file.startsWith(prefix)) {
+          const p = path.join(this.config.directory, file);
+          try { fs.unlinkSync(p); deleted++; } catch { /* ignore */ }
+        }
       }
     }
-    let deleted = 0;
-    for (const p of toDelete) { if (fs.existsSync(p)) { fs.unlinkSync(p); deleted++; } }
     return deleted > 0 ? { success: true, deletedCount: deleted } : { err: 'Not found', code: 404 };
   }
 

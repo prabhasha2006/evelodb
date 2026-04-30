@@ -1139,7 +1139,7 @@ export class eveloDB {
 
     if (fromDir !== toDir && fs.existsSync(fromDir)) {
       const remaining = fs.readdirSync(fromDir);
-      if (remaining.length === 0) fs.rmdirSync(fromDir, { recursive: true });
+      if (remaining.length === 0) fs.rmdirSync(fromDir);
     }
 
     return { success: true, converted: successCount, failed: errorCount };

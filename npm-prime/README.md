@@ -57,6 +57,11 @@ const db = new eveloDB();
 
 <a id="configuration"></a>
 ### Configuration
+
+> [!CAUTION]
+> **CRITICAL: Use a Single Instance**
+> Do **NOT** initialize `new eveloDB()` multiple times in different files (e.g., in different routes or middleware). Doing so will create separate, desynchronized memory caches and file handles, leading to missing data and `EPERM` lock errors.
+> **Instead, create a single `db.js` or `db.ts` file, initialize EveloDB there, and export the instance to use throughout your application.**
 ```js
 const db = new eveloDB({
     directory: './evelodbprime', // Storage directory

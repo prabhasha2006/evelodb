@@ -1,6 +1,6 @@
 {
   "name": "evelodb-prime",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "A high-performance native B-tree database for Node.js. Made by Evelocore. With B-tree Operations.",
   "main": "dist/cjs/evelodb.js",
   "module": "dist/esm/evelodb.js",
