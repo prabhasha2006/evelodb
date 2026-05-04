@@ -401,6 +401,25 @@ class PersistedBTree {
     return this.findInNode(node.children[lo], key);
   }
 
+  findAll(key: string): BTreeEntry[] {
+    const results: BTreeEntry[] = [];
+    this.traverseRange(this.root, key, key, results);
+    return results;
+  }
+
+  private traverseRange(node: PBTreeNode, low: string, high: string, result: BTreeEntry[]): void {
+    let i = 0;
+    while (i < node.entries.length && keyCmp(node.entries[i].key, low) < 0) i++;
+    if (!node.isLeaf) this.traverseRange(node.children[i], low, high, result);
+    while (i < node.entries.length) {
+      const cmpHigh = keyCmp(node.entries[i].key, high);
+      if (cmpHigh > 0) break;
+      result.push(node.entries[i]);
+      i++;
+      if (!node.isLeaf) this.traverseRange(node.children[i], low, high, result);
+    }
+  }
+
   insert(entry: BTreeEntry): void {
     this.dirty = true;
     if (this.root.entries.length === this.order - 1) {
@@ -412,53 +431,88 @@ class PersistedBTree {
     this.insertNonFull(this.root, entry);
   }
 
-  update(entry: BTreeEntry): boolean {
+  update(entry: BTreeEntry, oldOffset?: number): boolean {
     this.dirty = true;
-    return this.updateInNode(this.root, entry);
+    return this.updateInNode(this.root, entry, oldOffset);
   }
 
-  private updateInNode(node: PBTreeNode, entry: BTreeEntry): boolean {
+  private updateInNode(node: PBTreeNode, entry: BTreeEntry, oldOffset?: number): boolean {
     let lo = 0, hi = node.entries.length - 1;
     while (lo <= hi) {
       const mid = (lo + hi) >>> 1;
       const cmp = keyCmp(node.entries[mid].key, entry.key);
-      if (cmp === 0) { node.entries[mid] = entry; return true; }
+      if (cmp === 0) {
+        if (oldOffset === undefined || node.entries[mid].offset === oldOffset) {
+          node.entries[mid] = entry;
+          return true;
+        }
+        // If offset doesn't match, check other entries with same key in this node
+        // Search left
+        for (let j = mid - 1; j >= 0 && keyCmp(node.entries[j].key, entry.key) === 0; j--) {
+          if (node.entries[j].offset === oldOffset) { node.entries[j] = entry; return true; }
+        }
+        // Search right
+        for (let j = mid + 1; j < node.entries.length && keyCmp(node.entries[j].key, entry.key) === 0; j++) {
+          if (node.entries[j].offset === oldOffset) { node.entries[j] = entry; return true; }
+        }
+        // If not found in this node, it might be in children (B-trees can have duplicate keys across nodes)
+      }
       if (cmp < 0) lo = mid + 1;
       else hi = mid - 1;
     }
     if (node.isLeaf) return false;
-    return this.updateInNode(node.children[lo], entry);
+    // Check the child that could contain this key
+    return this.updateInNode(node.children[lo], entry, oldOffset);
   }
 
-  delete(key: string): void {
+  delete(key: string, offset?: number): void {
     this.dirty = true;
-    this.deleteFromNode(this.root, key);
+    this.deleteFromNode(this.root, key, offset);
     if (!this.root.isLeaf && this.root.entries.length === 0 && this.root.children.length > 0)
       this.root = this.root.children[0];
   }
 
-  private deleteFromNode(node: PBTreeNode, key: string): void {
+  private deleteFromNode(node: PBTreeNode, key: string, offset?: number): boolean {
     let lo = 0, hi = node.entries.length - 1, idx = -1;
     while (lo <= hi) {
       const mid = (lo + hi) >>> 1;
       const cmp = keyCmp(node.entries[mid].key, key);
-      if (cmp === 0) { idx = mid; break; }
+      if (cmp === 0) {
+        if (offset === undefined || node.entries[mid].offset === offset) {
+          idx = mid; break;
+        }
+        // Duplicate key, search adjacent entries in the same node
+        let found = false;
+        for (let j = mid - 1; j >= 0 && keyCmp(node.entries[j].key, key) === 0; j--) {
+          if (node.entries[j].offset === offset) { idx = j; found = true; break; }
+        }
+        if (!found) {
+          for (let j = mid + 1; j < node.entries.length && keyCmp(node.entries[j].key, key) === 0; j++) {
+            if (node.entries[j].offset === offset) { idx = j; found = true; break; }
+          }
+        }
+        if (found) break;
+      }
       if (cmp < 0) lo = mid + 1;
       else hi = mid - 1;
     }
+
     if (idx !== -1) {
       if (node.isLeaf) {
         node.entries.splice(idx, 1);
+        return true;
       } else {
         const pred = this.getRightmost(node.children[idx]);
         node.entries[idx] = pred;
-        this.deleteFromNode(node.children[idx], pred.key);
+        this.deleteFromNode(node.children[idx], pred.key, pred.offset);
         this.fixChild(node, idx);
+        return true;
       }
     } else {
-      if (node.isLeaf) return;
-      this.deleteFromNode(node.children[lo], key);
-      this.fixChild(node, lo);
+      if (node.isLeaf) return false;
+      const res = this.deleteFromNode(node.children[lo], key, offset);
+      if (res) this.fixChild(node, lo);
+      return res;
     }
   }
 
@@ -1069,7 +1123,7 @@ export class eveloDB {
         h.primaryIndex.delete(pk);
         // Delete from Secondary Indexes
         for (const [field, idx] of h.secondaryIndexes) {
-          if (doc[field] !== undefined) idx.delete(String(doc[field]));
+          if (doc[field] !== undefined) idx.delete(String(doc[field]), entry.offset);
         }
         deletedCount++;
       }
@@ -1108,16 +1162,18 @@ export class eveloDB {
 
         const sIdx = h.secondaryIndexes.get(field);
         if (sIdx) {
-          const entry = sIdx.find(String(val));
-          if (entry) {
-            const doc = h.store.read(entry.offset, entry.len);
-            if (doc && this.matchesConditions(doc as Record<string, unknown>, mappedConditions)) {
-              return new QueryResult<T>([(raw ? doc : this.mapOutput(collection, doc)) as unknown as T]);
+          const entries = sIdx.findAll(String(val));
+          if (entries.length > 0) {
+            const results: T[] = [];
+            for (const entry of entries) {
+              const doc = h.store.read(entry.offset, entry.len);
+              if (doc && this.matchesConditions(doc as Record<string, unknown>, mappedConditions)) {
+                results.push((raw ? doc : this.mapOutput(collection, doc)) as unknown as T);
+              }
             }
+            return new QueryResult<T>(results);
           }
-          // Note: Secondary indexes might have duplicates. 
-          // Currently BTree handles one value per key.
-          // This optimized path returns the first match found in index.
+          return new QueryResult<T>([]); // If index exists but value not found, return empty
         }
       }
     }
@@ -1277,10 +1333,10 @@ export class eveloDB {
       for (const [field, idx] of h.secondaryIndexes) {
         const oldVal = String((doc as any)[field]), newVal = String((updated as any)[field]);
         if (oldVal !== newVal) {
-          idx.delete(oldVal);
+          idx.delete(oldVal, entry.offset);
           idx.insert({ key: newVal, offset, len });
         } else {
-          idx.update({ key: oldVal, offset, len });
+          idx.update({ key: oldVal, offset, len }, entry.offset);
         }
       }
 
@@ -1378,7 +1434,7 @@ export class eveloDB {
         const doc = h.store.read(np.offset, np.len);
         if (doc) {
           for (const [field, idx] of h.secondaryIndexes) {
-            if (doc[field] !== undefined) idx.update({ key: String(doc[field]), offset: np.offset, len: np.len });
+            if (doc[field] !== undefined) idx.update({ key: String(doc[field]), offset: np.offset, len: np.len }, entry.offset);
           }
         }
       } else {
