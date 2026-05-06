@@ -800,7 +800,6 @@ interface CollectionHandle {
 export class eveloDB {
   config: Required<EveloDBConfig>;
   private handles: Map<string, CollectionHandle> = new Map();
-  private locks: Map<string, Promise<any>> = new Map();
   private backupManager: BackupManager;
 
   constructor(config: EveloDBConfig = {}) {
@@ -1282,56 +1281,6 @@ export class eveloDB {
     return { success: true, count: successCount };
   }
 
-  private applyUpdateOperators(doc: Record<string, any>, update: Record<string, any>): Record<string, any> {
-    const result = { ...doc };
-    const operators = Object.keys(update).filter(k => k.startsWith('$'));
-
-    if (operators.length === 0) {
-      // Standard merge if no operators found
-      return { ...result, ...update };
-    }
-
-    for (const op of operators) {
-      const val = update[op];
-      switch (op) {
-        case '$inc':
-          if (typeof val === 'object' && val !== null) {
-            for (const [field, incVal] of Object.entries(val)) {
-              if (typeof incVal === 'number') {
-                result[field] = (Number(result[field]) || 0) + incVal;
-              }
-            }
-          }
-          break;
-        case '$set':
-          if (typeof val === 'object' && val !== null) {
-            for (const [field, setVal] of Object.entries(val)) {
-              result[field] = setVal;
-            }
-          }
-          break;
-        case '$unset':
-          if (typeof val === 'object' && val !== null) {
-            for (const field of Object.keys(val)) {
-              delete result[field];
-            }
-          }
-          break;
-        case '$push':
-          if (typeof val === 'object' && val !== null) {
-            for (const [field, pushVal] of Object.entries(val)) {
-              // Clone the array to avoid mutating the original doc during validation
-              const currentArr = Array.isArray(result[field]) ? [...result[field]] : [];
-              currentArr.push(pushVal);
-              result[field] = currentArr;
-            }
-          }
-          break;
-      }
-    }
-    return result;
-  }
-
   edit(collection: string, conditions: Conditions, newData: Record<string, unknown>): EditResult {
     if (!collection || !conditions || !newData) return { err: 'Invalid request' };
 
@@ -1353,8 +1302,7 @@ export class eveloDB {
 
     if (this.config.schema?.[collection]) {
       for (const doc of toUpdate) {
-        const updatedPreview = this.applyUpdateOperators(doc, mappedNewData);
-        const schemaRes = this.validateSchema(collection, updatedPreview);
+        const schemaRes = this.validateSchema(collection, { ...doc, ...mappedNewData });
         if (!schemaRes.valid) return { err: schemaRes.err, code: 'SCHEMA_VALIDATION_FAILED' };
       }
     }
@@ -1370,9 +1318,7 @@ export class eveloDB {
       if (!entry) continue;
 
       const now = new Date().toISOString();
-      const updated = this.applyUpdateOperators(doc, mappedNewData);
-      updated._id = doc._id;
-      updated._modifiedAt = now;
+      const updated = { ...doc, ...mappedNewData, _id: doc._id, _modifiedAt: now };
 
       if (isNoRepeat && this.isDuplicateInArray([...baseSnapshot, ...written], updated)) {
         skippedDuplicates++; continue;
@@ -1583,55 +1529,6 @@ export class eveloDB {
       }
     }
     this.flushHandle(collection);
-  }
-
-  /**
-   * Performs an asynchronous transaction on a collection.
-   * Ensures that only one transaction runs at a time for the specified collection.
-   */
-  async transaction<T>(collection: string, callback: () => Promise<T> | T): Promise<T> {
-    if (!collection) throw new Error('Collection name required');
-    
-    // Get the current lock (promise chain) for this collection
-    const currentLock = this.locks.get(collection) || Promise.resolve();
-    
-    // Create the next link in the chain
-    const nextLock = currentLock.then(async () => {
-      try {
-        return await callback();
-      } catch (err) {
-        throw err;
-      }
-    }).finally(() => {
-      // Clean up the lock if we are the last one in the chain (optional optimization)
-      if (this.locks.get(collection) === nextLock) {
-        this.locks.delete(collection);
-      }
-    });
-
-    // Update the lock map
-    this.locks.set(collection, nextLock);
-    
-    // Return the result of the callback
-    return nextLock;
-  }
-
-  /**
-   * Performs an atomic operation. 
-   * If a collection name is provided, it locks only that collection.
-   * If no collection is provided, it acts as a global database lock.
-   */
-  async atomic<T>(
-    collectionOrCallback: string | ((tx: eveloDB) => Promise<T> | T),
-    callback?: (tx: eveloDB) => Promise<T> | T
-  ): Promise<T> {
-    const collection = typeof collectionOrCallback === 'string' ? collectionOrCallback : '__GLOBAL__';
-    const actualCallback = typeof collectionOrCallback === 'function' ? collectionOrCallback : callback;
-
-    if (!actualCallback) throw new Error('Callback required for atomic operation');
-
-    // Use the existing transaction (lock) logic
-    return this.transaction(collection, () => actualCallback(this));
   }
 
   object(name?: string): ObjectStore {

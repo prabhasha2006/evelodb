@@ -20,12 +20,15 @@
 - [📥 Installation](#installation)
 - [📘 TypeScript / ES Modules](#typescript)
 - [🔢 Comparison Operators](#comparison-operators)
+- [💈 Atomic Update Operators](#atomic-operators)
 - [🛠️ Configuration](#configuration)
 - [⚙️ Operations](#operations)
 - [💉 Inject Data](#inject)
 - [🔍 Get Query Result](#query-result)
 - [💾 Backup Data](#backup)
 - [📦 Object Store](#objectstore)
+- [💈 Atomic Operators](#atomic-operators)
+- [🔒 Transactions (atomic)](#transactions)
 - [📁 Store Files](#filehandle)
 - [🖼️ Image Utilities](#filehandleimg)
 - [💡 Features](#features)
@@ -204,6 +207,30 @@ Used to filter with conditions like greater than, less than, equal, etc.
 | `$in`    | Matches any in an array | `{ status: { $in: ["active", "pending"] } }` |
 | `$nin`   | Not in array            | `{ status: { $nin: ["inactive"] } }`    |
 | `$regex` | Regular expression      | `{ name: { $regex: "^Jo", $options: "i" } }` |
+
+
+**Example: Using Operators**
+```js
+db.find('users', { age: { $gte: 25 } }).all()
+```
+
+<br><br>
+
+<a id="atomic-operators"></a>
+# 💈 Atomic Update Operators
+EveloDB supports atomic operators to modify fields without manual read-modify-write cycles. This is essential for counters (like stock) in high-traffic APIs.
+
+| Operator | Description | Example |
+| :--- | :--- | :--- |
+| `$inc` | Increments/decrements a numeric field | `{ $inc: { stock: -1 } }` |
+| `$set` | Sets a field to a specific value | `{ $set: { status: 'active' } }` |
+| `$unset` | Removes a field from the document | `{ $unset: { temporaryFlag: true } }` |
+| `$push` | Appends a value to an array | `{ $push: { tags: 'new-tag' } }` |
+
+**Example: Atomic Stock Update**
+```js
+db.edit('products', { productId: '123' }, { $inc: { stock: -1 } });
+```
 
 <br><br>
 
@@ -537,6 +564,49 @@ const objects = db.object().list() // ["userSettings", "themeCache"] or []
 
 <br><br>
 
+<a id="transactions"></a>
+# 🔒 Transactions (`db.atomic`)
+EveloDB provides an asynchronous transaction system to prevent race conditions during complex operations that involve `await` gaps. 
+
+By using `db.atomic()`, you can ensure that a block of code runs in isolation. Any other atomic operation targeting the same collection will wait in a queue until the current one finishes.
+
+### Usage
+
+#### 1. Collection-Level Lock (Recommended)
+Only blocks the specific collection, allowing other collections to remain fast.
+```js
+await db.atomic('products', async (tx) => {
+    const item = tx.findOne('products', { id: 'p1' });
+    
+    await someAsyncLogic(); 
+    
+    tx.edit('products', { id: 'p1' }, { stock: item.stock - 1 });
+});
+```
+
+#### 2. Global Lock
+Blocks all collections. Useful for migrations or multi-collection updates.
+```js
+await db.atomic(async (tx) => {
+    const user = tx.findOne('users', { id: 'u1' });
+    tx.edit('logs', {}, { message: `User ${user.name} logged in` });
+});
+```
+
+### Why use this?
+While **Atomic Operators** ($inc) are great for simple math, you need **Transactions** when:
+1. You have multiple steps (Read -> Logic -> Write).
+2. You have `await` calls between your database operations.
+3. You want to ensure "All or Nothing" behavior.
+
+> [!TIP]
+> **Alternative: `db.transaction()`**
+> If you only need to lock a single collection and don't need the `tx` object, you can use the simpler `db.transaction('collection', async () => { ... })` method.
+
+<br><br>
+
+<br><br>
+
 <a id="filehandle"></a>
 # 📁 File Store
 
@@ -657,12 +727,19 @@ db.allFiles() // ['image.jpg', 'profile.pdf']
 - **Unique Constraints**: Prevent data duplication at the database level.
 - **Atomic Renames**: Crash-safe file writes using temporary staging.
 - **Auto-Compaction**: Automatic reclamation of deleted record space.
+- **Atomic Operators**: Support for `$inc`, `$set`, `$push`, and `$unset` for safe concurrent updates.
 - **System Timestamps**: Automatic `_createdAt` and `_modifiedAt` management.
 
 <br><br>
 
 <a id="changelog"></a>
 # 📈 Changelog
+
+### v1.0.0-beta.6 (EveloDB Prime)
+- **Feature**: Added **Atomic Update Operators** (`$inc`, `$set`, `$unset`, `$push`) for thread-safe field modifications.
+- **Feature**: Added **`db.atomic()`** and **`db.transaction()`** for asynchronous collection-level and global locking.
+- **Bug Fix**: Resolved a race condition where parallel async API calls could result in stale data reads/writes.
+- **Bug Fix**: Fixed a mutation issue in `$push` that caused double-updates during schema validation.
 
 ### v1.0.0-beta.0 (EveloDB Prime)
 - **Breaking**: Fully modularized backup system into `BackupManager`.

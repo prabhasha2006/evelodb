@@ -173,6 +173,11 @@ export class eveloDB {
   restoreBackup(collection: string, config: { type?: 'json' | 'binary'; file: string; password?: string }): { success: boolean; err?: string };
   readBackupFile(filePath: string, password?: string): BackupFileInfo;
   rebuildIndexes(collection: string): void;
+  transaction<T>(collection: string, callback: () => Promise<T> | T): Promise<T>;
+  atomic<T>(
+    collectionOrCallback: string | ((tx: eveloDB) => Promise<T> | T),
+    callback?: (tx: eveloDB) => Promise<T> | T
+  ): Promise<T>;
   object(name?: string): ObjectStore;
   closeAll(): void;
 }
